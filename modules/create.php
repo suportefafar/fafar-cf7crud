@@ -92,7 +92,7 @@ function fafar_cf7crud_before_send_mail_create( $contact_form ) {
         if( ! wp_verify_nonce( $data['fafar-cf7crud-nonce'], 'fafar-cf7crud-create-submission-nonce' ) ) {
 
             $contact_form->skip_mail = true; // Skip sending the mail
-            $submission->add_error( __( 'Forbidden submission!', 'fafar-cf7crud' ) ); //Dando erro nessa linha
+            $submission->add_error( __( 'Forbidden submission!', 'fafar-cf7crud' ) ); //Dando erro nessa linha 
 
         }
 
