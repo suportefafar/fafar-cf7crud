@@ -42,7 +42,6 @@ add_action( 'upgrader_process_complete', 'fafar_cf7crud_upgrade_function', 10, 2
 register_deactivation_hook( __FILE__, 'fafar_cf7crud_on_deactivate' );
 
 
-
 function fafar_cf7crud_callback_for_setting_up_scripts() {
 
     wp_register_style('fafar-cf7crud', plugins_url( 'css/main.css', __FILE__ ) );
