@@ -1,134 +1,269 @@
 <?php
 
+
 add_filter('wpcf7_form_elements', 'fafar_cf7crud_adding_hidden_fields');
 
 
 add_filter('wpcf7_form_tag', 'fafar_cf7crud_populate_form_field');
 
-
-function fafar_cf7crud_before_send_mail_update( $contact_form ) {
-
-    /**
-     * UPDATE SUBMISSION ROUTINE
-     * **/
+/*
+ * Function to update a submission
+ * Runs when at 'wpcf7_before_send_mail' action hook
+ *
+ * @since 1.0.0
+ * @param WPCF7_ContactForm Object $contact_form     Input form data.
+ * @return null
+*/
+function fafar_cf7crud_before_send_mail_update( $contact_form, $submission ) {
 
     global $wpdb;
-    $cfdb                  = apply_filters( 'fafar_cf7crud_database', $wpdb ); // Caso queira mudar o banco de dados
-    $table_name            = $cfdb->prefix . 'fafar_cf7crud_submissions';
-    $upload_dir            = wp_upload_dir();
-    $fafar_cf7crud_dirname = $upload_dir[ 'basedir' ] . '/fafar-cf7crud-uploads';
-    $bytes                 = random_bytes(5);
-    $unique_hash           = time().bin2hex($bytes);
 
-    $submission   = WPCF7_Submission::get_instance();
-    $contact_form = $submission->get_contact_form();
-    $tags_names   = array();
-    $strict_keys  = apply_filters('fafar_cf7crud_strict_keys', false);  
+    // Submission not found
+    if ( ! $submission ) {
+    
+        $contact_form->skip_mail = true; // Skip sending the mail
+        $submission->set_status( 'aborted' );
+        $submission->set_response( $contact_form->filter_message(
+            __( 'Submission not found!', 'fafar-cf7crud' ) )
+        );
+        return false;
+    
+    }
 
-    if ( $submission ) {
-
-        $allowed_tags = array();
-        $bl   = array( '\"', "\'", '/', '\\', '"', "'" );
-        $wl   = array( '&quot;', '&#039;', '&#047;', '&#092;', '&quot;', '&#039;' );
-
-        if( $strict_keys ){
-            $tags  = $contact_form->scan_form_tags();
-            foreach( $tags as $tag ){
-                if( ! empty($tag->name) ) $tags_names[] = $tag->name;
-            }
-            $allowed_tags = $tags_names;
-        }
-
-        $not_allowed_tags = apply_filters( 'fafar_cf7crud_not_allowed_tags', array( 'g-recaptcha-response' ) );
-        $allowed_tags     = apply_filters( 'fafar_cf7crud_allowed_tags', $allowed_tags );
-        $data             = $submission->get_posted_data();
-        $files            = $submission->uploaded_files();
-        $uploaded_files   = array();
-
-        $unique_hash = $submission->get_posted_data( "fafar-cf7crud-submission-id" ) ?
-                            $submission->get_posted_data( "fafar-cf7crud-submission-id" ) : $unique_hash;
-
-        foreach ( $_FILES as $file_key => $file ) {
-
-            array_push( $uploaded_files, $file_key );
-
-        }
-        foreach ( $files as $file_key => $file ) {
-
-            $file = is_array( $file ) ? reset( $file ) : $file;
-            if( empty( $file ) ) continue;
-            copy( $file, $fafar_cf7crud_dirname . '/' . $unique_hash . '-' . $file_key . '-' . basename( $file ) );
-
-        }
-
-        $form_data = array();
+    // Update routine diff
+    if ( ! $submission->get_posted_data( "fafar-cf7crud-submission-id" )) {
         
-        foreach ( $data as $key => $d ) {
-            
-            if( $strict_keys && !in_array( $key, $allowed_tags ) ) continue;
-
-            if( $key == 'fafar-cf7crud-submission-id' ) continue;
-
-            if( str_contains( $key, 'fafar-cf7crud-input-file-hidden-' ) ) continue;
-
-            if ( !in_array( $key, $not_allowed_tags ) && !in_array( $key, $uploaded_files )  ) {
-
-                $tmpD = $d;
-
-                if ( ! is_array( $d ) ) {
-                    $tmpD = str_replace( $bl, $wl, $tmpD );
-                } else {
-
-                    $tmpD = array_map( function($item) use($bl, $wl) {
-                               return str_replace( $bl, $wl, $item ); 
-                            }, $tmpD);
-                }
-
-                $key = sanitize_text_field( $key );
-                $form_data[ $key ] = $tmpD;
-            }
-            if ( in_array( $key, $uploaded_files ) ) {
-
-                $file = is_array( $files[ $key ] ) ? reset( $files[ $key ] ) : $files[ $key ];
-                
-                $file_name = empty( $file ) ? '' : $unique_hash . '-' . $key . '-' . basename( $file ); 
-                
-                $key = sanitize_text_field( $key );
-                
-                $form_data[ $key . 'fafarcf7crudfile' ] = $file_name;
-
-                if( $file_name == '' ) {
-
-                    $form_data[ $key . 'fafarcf7crudfile' ] = 
-                        $submission->get_posted_data( 'fafar-cf7crud-input-file-hidden-' . $key ) ? 
-                            $submission->get_posted_data( 'fafar-cf7crud-input-file-hidden-' . $key ) : "";
-
-                }
-
-            }
-        }
-
-        /* fafar_cf7crud before save data. */
-        $form_data = apply_filters( 'fafar_cf7crud_before_update_data', $form_data );
-
-        do_action( 'fafar_cf7crud_before_update', $form_data );
-
-        $form_id         = $contact_form->id();
-        $submission_data = json_encode( $form_data );
-
-        $cfdb->update(
-            $table_name,
-            array(
-                'submission_data' => $submission_data
-            ),
-            array(
-                'submission_id' => $submission->get_posted_data( "fafar-cf7crud-submission-id" )
+        $contact_form->skip_mail = true; // Skip sending the mail
+        $submission->set_status( 'aborted' );
+        $submission->set_response( $contact_form->filter_message(
+            __( 'Submission ID not found!', 'fafar-cf7crud' ) 
             )
         );
+        return false;
 
-        /* fafar_cf7crud after save data */
-        do_action( 'fafar_cf7crud_after_update_data', $submission->get_posted_data( "fafar-cf7crud-submission-id" ) );
     }
+
+    /*
+     * If other database should be used.
+     */
+    $fafar_cf7crud_db = apply_filters( 'fafar_cf7crud_set_database', $wpdb );
+    $table_name       = $fafar_cf7crud_db->prefix . 'fafar_cf7crud_submissions';
+    
+    /*
+     * Set the upload folder
+     */
+    $upload_dir                    = wp_upload_dir();
+    $fafar_cf7crud_upload_dir_path = apply_filters( 
+        'fafar_cf7crud_set_upload_dir_path', 
+        $upload_dir[ 'basedir' ] . '/fafar-cf7crud-uploads/'
+     );
+
+    /*
+     * Generating unique hash for submission 'id' 
+     * if not passed
+     */
+    $bytes       = random_bytes(5);
+    $unique_hash = $submission->get_posted_data( "fafar-cf7crud-submission-id" ); // Update routine diff
+
+
+    /*
+    *  CF7 uploads the files to it's own folder.
+    *  Here we copy these files from CF7 upload folder to our upload folder.
+    *    Array
+    *     (
+    *         [bill-doc] => Array
+    *         (
+    *               [0] => /var/www/html/wp-content/uploads/wpcf7_uploads/2084569911/Captura-de-tela-de-2024-08-30-19-31-14.png
+    *         )
+    *    
+    *     )
+    */
+    $files_to_database = array();
+    $cf7_uploaded_files = $submission->uploaded_files();
+    foreach ($cf7_uploaded_files as $file_key => $file) {
+
+        $file = is_array( $file ) ? reset( $file ) : $file;
+        if( ! empty($file) ) {
+
+            $filename = $unique_hash . '-' . $file_key . '-' . basename( $file );
+
+            copy( 
+                $file, // From
+                $fafar_cf7crud_upload_dir_path . sanitize_file_name( $filename ) // To
+            );
+
+            $files_to_database[$file_key] = sanitize_file_name( $filename );
+
+        }
+
+    }
+ 
+    /**
+     * Tags filter
+     * $contact_form->scan_form_tags( $cond ) : Array of WPCF7_FormTag Object
+     *   $cond: array( 
+     *            'type' => array( 'text*' ... )       Ex.: text, text*, select, select*, etc.
+     *            'basetype' => array( 'text' ... )    Ex.: text, select, etc.
+     *            'name' => array( 'car-model' ... )   Name input prop.
+     *            'feature' => array( 'required' ... ) Ex.: 'required', 'placeholder', 'readonly', 'accepts_files', 'multiselect', etc. 
+     *   )
+     * 
+     * 
+     * $allowed_tags : array( 
+     *   [0] => WPCF7_FormTag Object
+     *    (
+     *        [type] => text*
+     *        [basetype] => text
+     *        [raw_name] => your-name
+     *        [name] => your-name
+     *        [options] => Array
+     *            (
+     *                    [0] => autocomplete:name
+     *            )
+     *
+     *        [raw_values] => Array
+     *            (
+     *
+     *            )
+     *
+     *        [values] => Array
+     *            (
+     *
+     *            )
+     *
+     *        [pipes] => WPCF7_Pipes Object
+     *            (
+     *                    [pipes:WPCF7_Pipes:private] => Array
+     *                    (
+     *
+     *                    )
+     *
+     *            )
+     *
+     *        [labels] => Array
+     *            (
+     *
+     *            )
+     *
+     *        [attr] => 
+     *        [content] => 
+     *    )
+    */
+    $allowed_tags = array();
+    $tags_names   = array();
+    $tags  = $contact_form->scan_form_tags();
+
+    foreach( $tags as $tag ){
+        if( ! empty($tag->name) ) $tags_names[] = $tag->name;
+    }
+    
+    $allowed_tags       = apply_filters( 'fafar_cf7crud_allowed_tags', $tags_names );
+    
+    $not_allowed_fields = apply_filters( 'fafar_cf7crud_not_allowed_fields', array( 'g-recaptcha-response' ) );
+
+    /**
+     * $submission->get_posted_data() : 
+     * Array (
+     *       [your-name] => asdfasdfasdf
+     *       [your-subject] => asdfasdfasdf
+     *       [your-message] => asdfasdfasdf
+     *       [fafar-cf7crud-input-file-hidden-bill-doc] => Captura de tela de 2024-08-28 16-39-26.png
+     *       [bill-doc] => adf1eaf01842149c785a109ee87430eb
+     *   )
+     */
+    $posted_data = $submission->get_posted_data();
+    $form_data = array();
+    foreach ($posted_data as $key => $value) {
+        
+        /**
+         * Jump's at 'fafar-cf7crud-submission-id' because is just used to retrieve 
+         * the submission ID.
+         * Update routine diff
+        */
+        if( $key == 'fafar-cf7crud-submission-id' ) continue;
+
+        /**
+         * Jump's at 'fafar-cf7crud-object-name' to use it as column on DB
+        */
+        if( $key === 'fafar-cf7crud-object-name' ) continue;
+
+        /**
+         * Jump's field whitch $key do not appears on 
+         * original form WPCF7_FormTag Object.
+         */
+        if ( ! in_array( $key, $allowed_tags ) ) continue;
+
+        /**
+         * Jump's field whitch $key do appears on 
+         * $not_allowed_fields array.
+         */
+        if ( in_array( $key, $not_allowed_fields ) ) continue;
+
+        /**
+         * FILES HANDLER
+         * If $files_to_database[$key] is set, 
+         * stores on $form_data.
+         */
+        if ( isset( $files_to_database[$key] ) ) {
+
+            $file_prefix = 'fafar-cf7crud-file-';
+
+            $form_data[sanitize_key( $file_prefix . $key )] = $files_to_database[$key];
+
+            continue;
+
+        }
+
+        /**
+         * Custom sanitize by it's custom prefix,
+         * if set.
+         */
+        $tmpValue = "";
+        if ( ! is_array($value) ) {
+
+            $tmpValue = fafar_cf7crud_sanitize( $value, $key );
+    
+        } else {
+
+            $tmpValue = array();
+            foreach( $value as $index => $item ) {
+                array_push($tmpValue, fafar_cf7crud_sanitize( $item, $key ));
+            }           
+
+        }
+
+        /**
+         * Sanitize $key data then add at $form_data.
+         */
+
+        $form_data[sanitize_key( $key )] = $tmpValue;
+
+    }
+
+    /**
+     *  This filter hook gives the oportunity to make a 
+     *  another check/validation. 
+     */
+    $form_data = apply_filters('fafar_cf7crud_before_update', $form_data);
+
+    if ( $form_data === null ) return false;
+
+    $form_post_id      = $contact_form->id();
+    $form_data_as_json = json_encode( $form_data );
+
+    $fafar_cf7crud_db->update(
+        $table_name,
+        array(
+            'data' => $form_data_as_json
+        ),
+        array(
+            'id' => $unique_hash
+        )
+    );
+
+    do_action( 'fafar_cf7crud_after_update', $unique_hash );
+
+    return true;
 }
 
 
@@ -136,20 +271,20 @@ function fafar_cf7crud_get_file_attrs() {
 
     global $wpdb;
 
-    $cfdb = apply_filters( 'fafar_cf7crud_database', $wpdb ); // Caso queira mudar o banco de dados
+    $fafar_cf7crud_db = apply_filters( 'fafar_cf7crud_database', $wpdb ); // Caso queira mudar o banco de dados
 
-    $assistido = $cfdb->get_results("SELECT * FROM `" . $cfdb->prefix . 'fafar_cf7crud_submissions' . "` WHERE `submission_id` = '" . $_GET['id'] . "'" );
+    $assistido = $fafar_cf7crud_db->get_results("SELECT * FROM `" . $fafar_cf7crud_db->prefix . 'fafar_cf7crud_submissions' . "` WHERE `id` = '" . $_GET['id'] . "'" );
 
     $file_attrs = array();
 
 	if ( !$assistido[0] )
         return $file_attrs;
 	
-	$form_data = json_decode( $assistido[0]->submission_data );
+	$form_data = json_decode( $assistido[0]->data );
 
 	foreach ( $form_data as $chave => $data ) {
 
-        if ( strpos( $chave, 'fafarcf7crudfile' ) !== false ) {
+        if ( strpos( $chave, 'fafar-cf7crud-file-' ) !== false ) {
 
             $file_attrs[ $chave ] = $data;
 
@@ -165,14 +300,14 @@ function fafar_cf7crud_get_input_value( $tag_name ) {
 
     global $wpdb;
 
-    $cfdb = apply_filters( 'fafar_cf7crud_database', $wpdb ); // Caso queira mudar o banco de dados
+    $fafar_cf7crud_db = apply_filters( 'fafar_cf7crud_database', $wpdb ); // Caso queira mudar o banco de dados
 
-    $assistido = $cfdb->get_results( "SELECT * FROM `" . $cfdb->prefix . 'fafar_cf7crud_submissions' . "` WHERE `submission_id` = '" . $_GET['id'] . "'" );
+    $assistido = $fafar_cf7crud_db->get_results( "SELECT * FROM `" . $fafar_cf7crud_db->prefix . 'fafar_cf7crud_submissions' . "` WHERE `id` = '" . $_GET['id'] . "'" );
 
 	if ( !$assistido[0] ) 
         return "";
 	
-	$form_data = json_decode( $assistido[0]->submission_data );
+	$form_data = json_decode( $assistido[0]->data );
 
 	foreach ( $form_data as $chave => $data ) {
 
@@ -220,7 +355,7 @@ function fafar_cf7crud_populate_form_field($tag) {
 
     } else if( $tag['basetype'] == 'file' ) {
 
-        $input_value = fafar_cf7crud_get_input_value( $tag['name'] . 'fafarcf7crudfile' );
+        $input_value = fafar_cf7crud_get_input_value( 'fafar-cf7crud-file-' . $tag['name'] );
 
         $tag['raw_values'] = (array) $input_value;
 
@@ -254,7 +389,7 @@ function fafar_cf7crud_get_custom_input_file( $input_file_str, $file_attrs ) {
     $name_attr = str_replace( '"' , '', $name_attr );
 
     // Set attr as database saved
-    $key_attr_with_file_db_sufix = $name_attr . 'fafarcf7crudfile';
+    $key_attr_with_file_db_sufix = 'fafar-cf7crud-file-' . $name_attr;
 
     // Get current attr value: String | ""
     $value_attr = fafar_cf7crud_get_input_file_attr_value( $key_attr_with_file_db_sufix, $file_attrs );

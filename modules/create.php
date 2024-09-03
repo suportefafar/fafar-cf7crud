@@ -55,8 +55,8 @@ function fafar_cf7crud_before_send_mail_create( $contact_form, $submission ) {
     /*
      * If other database should be used.
      */
-    $cfdb                  = apply_filters( 'fafar_cf7crud_set_database', $wpdb );
-    $table_name            = $cfdb->prefix . 'fafar_cf7crud_submissions';
+    $fafar_cf7crud_db = apply_filters( 'fafar_cf7crud_set_database', $wpdb );
+    $table_name       = $fafar_cf7crud_db->prefix . 'fafar_cf7crud_submissions';
     
     /*
      * Set the upload folder
@@ -68,20 +68,10 @@ function fafar_cf7crud_before_send_mail_create( $contact_form, $submission ) {
      );
 
     /*
-     * Generating hash for submission 'id'
+     * Generating unique hash for submission 'id'2
      */
     $bytes                 = random_bytes(5);
     $unique_hash           = time().bin2hex($bytes); 
-
-
-    // /*
-    //  *  Add each $file_key to the $upload_files array.
-    //  */
-    // $uploaded_files = array();
-    // foreach ($_FILES as $file_key => $file) {
-    //     array_push($uploaded_files, $file_key);
-    // }
-
 
     /*
     *  CF7 uploads the files to it's own folder.
@@ -193,6 +183,11 @@ function fafar_cf7crud_before_send_mail_create( $contact_form, $submission ) {
     foreach ($posted_data as $key => $value) {
         
         /**
+         * Jump's at 'fafar-cf7crud-object-name' to use it as column on DB
+        */
+        if( $key === 'fafar-cf7crud-object-name' ) continue;
+
+        /**
          * Jump's field whitch $key do not appears on 
          * original form WPCF7_FormTag Object.
          */
@@ -204,23 +199,20 @@ function fafar_cf7crud_before_send_mail_create( $contact_form, $submission ) {
          */
         if ( in_array( $key, $not_allowed_fields ) ) continue;
 
-
-
         /**
          * FILES HANDLER
-         * If $uploaded_files[$key] is set, 
+         * If $files_to_database[$key] is set, 
          * stores on $form_data.
          */
-        if ( isset( $uploaded_files[$key] ) ) {
+        if ( isset( $files_to_database[$key] ) ) {
 
             $file_prefix = 'fafar-cf7crud-file-';
 
-            $form_data[sanitize_key( $file_prefix . $key )] = $uploaded_files[$key];
+            $form_data[sanitize_key( $file_prefix . $key )] = $files_to_database[$key];
 
             continue;
 
         }
-
 
         /**
          * Custom sanitize by it's custom prefix,
@@ -233,12 +225,10 @@ function fafar_cf7crud_before_send_mail_create( $contact_form, $submission ) {
     
         } else {
 
-            $tmpValue = array_map( 
-                function($item) {
-                    return fafar_cf7crud_sanitize( $item, $key );
-                }, 
-                $value 
-            );
+            $tmpValue = array();
+            foreach( $value as $index => $item ) {
+                array_push($tmpValue, fafar_cf7crud_sanitize( $item, $key ));
+            }           
 
         }
 
@@ -258,18 +248,21 @@ function fafar_cf7crud_before_send_mail_create( $contact_form, $submission ) {
 
     if ( $form_data === null ) return false;
 
-    $form_post_id = $form_tag->id();
-    $form_value   = json_encode( $form_data );
+    $form_post_id      = $contact_form->id();
+    $form_data_as_json = json_encode( $form_data );
 
-    $cfdb->insert( $table_name, array(
-        'form_post_id' => $form_post_id,
-        'form_value'   => $form_value,
-        'form_date'    => $form_date
+    $object_name = $posted_data['fafar-cf7crud-object-name'] ?? '';
+
+    $fafar_cf7crud_db->insert( $table_name, array(
+        'id'          => $unique_hash,
+        'form_id'     => $form_post_id,
+        'object_name' => $object_name,
+        'data'        => $form_data_as_json,
     ) );
 
-    /* cfdb7 after save data */
-    $insert_id = $cfdb->insert_id;
-    do_action( 'cfdb7_after_save_data', $insert_id );
+    
+    $insert_id = $fafar_cf7crud_db->insert_id;
+    do_action( 'fafar_cf7crud_after_create', $insert_id );
 
     return true;
 }

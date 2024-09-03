@@ -28,6 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
  * Define Constants
 */
 define( 'FAFAR_CF7CRUD_DIR', trailingslashit( plugin_dir_path(__FILE__) ) );
+define( 'FAFAR_CF7_FILE_PREFIX', 'fafar-cf7crud-file-' );
 
 
 add_action('wp_enqueue_scripts', 'fafar_cf7crud_callback_for_setting_up_scripts');
@@ -68,6 +69,7 @@ function fafar_cf7crud_create_table(){
         $sql = "CREATE TABLE $table_name (
             id VARCHAR(255) NOT NULL,
             form_id INT(20) NOT NULL,
+            object_name VARCHAR(50),
             data JSON NOT NULL,
             is_active INT(1) NOT NULL DEFAULT 1,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

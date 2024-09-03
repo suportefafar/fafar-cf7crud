@@ -27,10 +27,20 @@ fafar_cf7crud_submissions:
 
 - id VARCHAR(255) (NOT NULL | PRIMARY KEY)
 - form_id INT(20) (NOT NULL)
+- object_name VARCHAR(50)
 - data JSON (NOT NULL)
 - is_active INT(1) NOT NULL DEFAULT 1
 - updated_at TIMESTAMP (NOT NULL | DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)
 - created_at TIMESTAMP (NOT NULL | DEFAULT CURRENT_TIMESTAMP)
+
+### Nome do Objeto
+
+O parâmetro 'object_name' é opcional e pode ser usado para atrelar um nome de objeto a submissão.  
+Adicione um input ao formulário com o nome 'fafar-cf7crud-object-name'. Exemplo:
+
+```
+[hidden fafar-cf7crud-object-name "carro"]
+```
 
 ### Banco de Dados Customizado
 
@@ -112,6 +122,13 @@ Se nenhum prefixo conhecido for informado, utiliza-se o [sanitize_text_field](ht
 
 Cada input[type=file] se torna uma entrada personalizada para melhor controle, na criação e atualização de formulários.
 
+### Prefixo
+
+No banco de dados, o nome do arquivo é guardado dessa forma:  
+'fafar-cf7crud-file-' + NOME DA PROPRIEDADE = NOME DO ARQUIVO.EXTENSÃO  
+Exemplo:  
+'fafar-cf7crud-file-foto':'foto.jpg'
+
 ### Pasta de Upload
 
 Caminho: [...]wp-content/uploads/fafar-cf7crud-uploads/
@@ -122,7 +139,7 @@ Caminho: [...]wp-content/uploads/fafar-cf7crud-uploads/
 Parâmetro esperado: Array PHP, com todos os campos e seus respectivos valores.
 Retorno esperado: Objeto PHP | null(para cancelar a criação).
 
-## Não Suportado
+## Plugins Não Suportados
 
 - Drag and Drop Multiple File Upload - Contact Form 7
 
