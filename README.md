@@ -44,7 +44,7 @@ Observação: Se espera uma tabela 'fafar_cf7crud_submissions' com as respectiva
 
 ### Verificação/Uso de Nonce
 
-Para formulários privados, recomenda-se o uso da solução do Contact Form 7 via '[Configurações Adicionais]'(https://contactform7.com/additional-settings/#subscribers-only-mode):
+Para formulários privados, recomenda-se o uso da solução do Contact Form 7 via [Configurações Adicionais](https://contactform7.com/additional-settings/#subscribers-only-mode):
 
 ```
 subscribers_only: on
@@ -67,7 +67,7 @@ $allowed_fields. Array. Nome dos inputs. Um item: 'g-recaptcha-response'.
 ### fafar-cf7crud-san-lb-
 
 Adicione o prefixo 'fafar-cf7crud-san-lb-' para que quebras de linha sejam mantidas.
-Utiliza-se a função '[sanitize_textarea_field]'(https://developer.wordpress.org/reference/functions/sanitize_textarea_field/).
+Utiliza-se a função [sanitize_textarea_field](https://developer.wordpress.org/reference/functions/sanitize_textarea_field/).
 Exemplo:
 
 ```
@@ -77,7 +77,7 @@ Exemplo:
 ### fafar-cf7crud-san-em-
 
 Adicione o prefixo 'fafar-cf7crud-san-em-' para remover todos os caracteres não permitidos em um e-mail.
-Utiliza-se a função ['sanitize_email'](https://developer.wordpress.org/reference/functions/sanitize_email/).
+Utiliza-se a função [sanitize_email](https://developer.wordpress.org/reference/functions/sanitize_email/).
 Exemplo:
 
 ```
@@ -87,7 +87,7 @@ Exemplo:
 ### fafar-cf7crud-san-fi-
 
 Adicione o prefixo 'fafar-cf7crud-san-fi-' para substituir todos os espaços em branco por traços.
-Utiliza-se a função ['sanitize_file_name'](https://developer.wordpress.org/reference/functions/sanitize_file_name/).
+Utiliza-se a função [sanitize_file_name](https://developer.wordpress.org/reference/functions/sanitize_file_name/).
 Exemplo:
 
 ```
@@ -97,7 +97,7 @@ Exemplo:
 ### fafar-cf7crud-san-key-
 
 Adicione o prefixo 'fafar-cf7crud-san-key-' para transformar todas as letras em minúsculos. Além disso, permite apenas sublinhados e traços.
-Utiliza-se a função ['sanitize_key'](https://developer.wordpress.org/reference/functions/sanitize_key/).
+Utiliza-se a função [sanitize_key](https://developer.wordpress.org/reference/functions/sanitize_key/).
 Exemplo:
 
 ```
@@ -106,7 +106,7 @@ Exemplo:
 
 ### Outros
 
-Se nenhum prefixo conhecido for informado, utiliza-se o ['sanitize_text_field'](https://developer.wordpress.org/reference/functions/sanitize_text_field/).
+Se nenhum prefixo conhecido for informado, utiliza-se o [sanitize_text_field](https://developer.wordpress.org/reference/functions/sanitize_text_field/).
 
 ## Arquivos
 
