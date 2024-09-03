@@ -47,9 +47,9 @@ Adicione um input ao formulário com o nome 'fafar-cf7crud-object-name'. Exemplo
 Seguindo a filosofia de que deve-se evitar a exclusão, a coluna 'is_active' pode ser útil.  
 Optado utilizar INT por ser um tipo de dados globalmente aceito.  
 Uso:  
-1: Ativo;  
-0: Desativo;  
-( _Ou o que a criatividade mandar_ )
+1: Ativado;  
+0: Desativado;  
+( Ou o que a criatividade mandar )
 
 ### Banco de Dados Customizado
 
