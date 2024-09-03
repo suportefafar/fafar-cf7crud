@@ -11,9 +11,14 @@ require_once trailingslashit( plugin_dir_path(__FILE__) ) . 'delete.php';
 
 
 /*
- * Using 'wpcf7_before_send_mail' hook for creating or updating submissions
+ * Using 'wpcf7_before_send_mail' hook for creating or updating submissions.
+ * We use 3 parameters available: 
+ *      - $this->contact_form (Current instance of WPCF7_ContactForm);
+ *      - &$abort (bool);
+ *      - $this (Current instance of WPCF7_Submission);
+ * add_action( $hook_name:string, $callback:callable, $priority:integer, $accepted_args:integer )
 */
-add_action( 'wpcf7_before_send_mail', 'fafar_cf7crud_before_send_mail_handler' );
+add_action( 'wpcf7_before_send_mail', 'fafar_cf7crud_before_send_mail_handler', 10, 3 );
 
 
 /*
@@ -23,18 +28,18 @@ add_action( 'wpcf7_before_send_mail', 'fafar_cf7crud_before_send_mail_handler' )
  * @param array $contact_form     Input form data.
  * @return null
 */
-function fafar_cf7crud_before_send_mail_handler( $contact_form ) {
-
-    $submission   = WPCF7_Submission::get_instance();
+function fafar_cf7crud_before_send_mail_handler( $contact_form, $abort, $submission ) {
 
     if( $submission->get_posted_data( 'fafar-cf7crud-submission-id' ) !== null ) {
 
-        fafar_cf7crud_before_send_mail_update( $contact_form );
+        $abort = ! fafar_cf7crud_before_send_mail_update( $contact_form, $submission );
         
     } else {
         
-        fafar_cf7crud_before_send_mail_create( $contact_form );
+        $abort = ! fafar_cf7crud_before_send_mail_create( $contact_form, $submission );
 
     }
+
+    $abort = true;
 
 }
