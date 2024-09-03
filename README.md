@@ -34,17 +34,17 @@ fafar_cf7crud_submissions:
 
 ### Banco de Dados Customizado
 
-Use o filter hook 'fafar_cf7crud_set_database' para utilizar outro banco de dados.
-Parâmetros:
+Use o filter hook 'fafar_cf7crud_set_database' para utilizar outro banco de dados.  
+Parâmetros:  
 $wpdb. WPDB Object. Instância global.
 
-Observação: Se espera uma tabela 'fafar_cf7crud_submissions' com as respectivas colunas no banco de dados retornado pelo hook 'fafar_cf7crud_set_database'.
+Observação: Se espera uma tabela 'fafar_cf7crud_submissions' com as respectivas colunas no banco de dados no retorno do hook.
 
 ## Segurança
 
 ### Verificação/Uso de Nonce
 
-Para formulários privados, recomenda-se o uso da solução do Contact Form 7 via ['Configurações Adicionais'](https://contactform7.com/additional-settings/#subscribers-only-mode):
+Para formulários privados, recomenda-se o uso da solução do Contact Form 7 via '[Configurações Adicionais]'(https://contactform7.com/additional-settings/#subscribers-only-mode):
 
 ```
 subscribers_only: on
@@ -52,14 +52,14 @@ subscribers_only: on
 
 ### Tag's Permitidas
 
-Para configurar tag's permitidas, use o filter hook 'fafar_cf7crud_not_allowed_tags'.
-Parâmetros:
+Para configurar tag's permitidas, use o filter hook 'fafar_cf7crud_not_allowed_tags'.  
+Parâmetros:  
 $allowed_tags. Array. Todas as tag's presentes no formulário.
 
-### Campos Não Permitidas
+### Campos Não Permitidos
 
-Para configurar campos não permitidos, use o filter hook 'fafar_cf7crud_not_allowed_fields'.
-Parâmetros:
+Para configurar campos não permitidos, use o filter hook 'fafar_cf7crud_not_allowed_fields'.  
+Parâmetros:  
 $allowed_fields. Array. Nome dos inputs. Um item: 'g-recaptcha-response'.
 
 ## Inputs Customizados
@@ -67,7 +67,7 @@ $allowed_fields. Array. Nome dos inputs. Um item: 'g-recaptcha-response'.
 ### fafar-cf7crud-san-lb-
 
 Adicione o prefixo 'fafar-cf7crud-san-lb-' para que quebras de linha sejam mantidas.
-Utiliza-se a função ['sanitize_textarea_field'](https://developer.wordpress.org/reference/functions/sanitize_textarea_field/).
+Utiliza-se a função '[sanitize_textarea_field]'(https://developer.wordpress.org/reference/functions/sanitize_textarea_field/).
 Exemplo:
 
 ```
