@@ -62,40 +62,65 @@ Uso:
 
 ## Opções de Formulário
 
-Para tag's de multipla opção como select e checkbox, é possível utilizar a propriedade 'fafar-cf7crud-dynamic-data', que faz uma busca na tabela 'fafar-cf7crud-submissions', pelos parametros informados.  
-Sintaxe geral:  
-fafar-cf7crud-data:PROPRIEDADE_LABEL|PROPRIEDADE_VALOR:(FILTROS_DE_COLUNA):(FILTROS_DE_PROPRIEDADE_JSON_DA_COLUNA_DATA)  
-Específico:  
-fafar-cf7crud-data:PROPRIEDADE_LABEL|PROPRIEDADE_VALOR:(COLUNA_1:VALOR;COLUNA_2:VALOR):(PROPRIEDADE_JSON_DA_COLUNA_DATA_1:VALOR;PROPRIEDADE_JSON_DA_COLUNA_DATA_2:VALOR)
-
-'PROPRIEDADE_LABEL' e 'PROPRIEDADE_VALOR' aceita o nome de coluna ou propriedade json da coluna 'data'.
-
-PROPRIEDADE_LABEL e PROPRIEDADE_VALOR aceitam apenas letras, números e hífen(-). FILTROS_DE_COLUNA e FILTROS_DE_PROPRIEDADE_JSON_DA_COLUNA_DATA aceitam apenas letras, números, hífen(-), dois pontos(:) e 'ponto-e-vírgula'(;).
-
-Exemplo:
-
-```
-[select* car-models fafar-cf7crud-data:model|id;(is_active:1;object_name:car);(brand:Renault;model:Sandero)]
-ou
-[select* car-models fafar-cf7crud-data:model|motor;(is_active:1;object_name:car);(brand:Renault;model:Sandero)]
-```
-
-Saída:
-
-```
-<option value='kjh34sfdg'>Renault<option>
-ou
-<option value='SCe 1.6'>Renault<option>
-```
-
-Se um dos filtros não for usado, deve se manter o abre e fecha parênteses:
-
-```
-[select* car-models fafar-cf7crud-data:model|id;();(brand:Renault;model:Sandero)]
-
-```
-
+É possível inserir valores da tabela padrão do plugin('fafar-cf7crud-submissions') com algumas 'options' personalizadas.
 Pode-se usar a palavra 'this' para representar o valor da submissão atual.
+
+### fa-crud-display
+
+Essa propriedade define os valores aplicados do HTML. Exemplo:
+
+```
+<option value="PROPRIEDADE_VALOR">PROPRIEDADE_LABEL</option>
+```
+
+Sintaxe:
+
+fa-crud-display:PROPRIEDADE_LABEL|PROPRIEDADE_VALOR
+
+Essa propriedade aceita apenas um par chave|valor.
+
+Para o preenchimento de dados, essa é a única propriedade obrigatória.
+
+### fa-crud-column-filter
+
+Essa propriedade aplica filtro de igualdade com as colunas|valores informados.
+
+Sintaxe:
+
+fa-crud-column-filter:COLUNA_1|VALOR_1:COLUNA_2|VALOR_2
+
+Essa propriedade aceita mais de um par chave|valor.
+
+Atualmente, não é possível inserir uma chave ou valor com espaços.
+
+É possível utilizar a palavra-chave 'this' para se referenciar ao valor da propriedade atual da 'submissão' em questão. Exemplo:
+
+```
+[... fa-crud-column-filter:id|this:color|this]
+```
+
+Para o preenchimento de dados, essa propriedade é opcional.
+
+### fa-crud-json-filter
+
+Essa propriedade aplica filtro de igualdade com as propriedades_json|valores informados.
+Essas propriedades são as que ficam armazenadas na coluna 'data'.
+
+Sintaxe:
+
+fa-crud-column-filter:PROP_JSON_1|VALOR_1:PROP_JSON_2|VALOR_2
+
+Essa propriedade aceita mais de um par chave|valor.
+
+Atualmente, não é possível inserir uma chave ou valor com espaços.
+
+É possível utilizar a palavra-chave 'this' para se referenciar ao valor da propriedade atual da 'submissão' em questão. Exemplo:
+
+```
+[... fa-crud-json-filter:id|this:color|this]
+```
+
+Para o preenchimento de dados, essa propriedade é opcional.
 
 ### Banco de Dados Customizado
 

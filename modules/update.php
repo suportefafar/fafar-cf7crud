@@ -272,6 +272,7 @@ function fafar_cf7crud_before_send_mail_update( $contact_form, $submission ) {
 /*
  * Called on 'wpcf7_form_tag' filter hook.
  * This set a value to the inputs 'value' prop.
+ * 
  * Ex: <input value="VALUE_TO_BE_SET" />
  * 
  * Works on 'checkbox', 'radio' and 'select' input tags, too.
@@ -281,120 +282,202 @@ function fafar_cf7crud_before_send_mail_update( $contact_form, $submission ) {
  * @return CF7 Tag Object $tag  CF7 tag object from contact-form-7/includes/form-tags-manager.php
 */
 function fafar_cf7crud_populate_input_value_dynamically( $tag ) { 
+
+    global $wpdb;
+    /*
+     * If other database should be used.
+     */
+    $fafar_cf7crud_db = apply_filters( 'fafar_cf7crud_set_database', $wpdb );
+    $table_name       = $fafar_cf7crud_db->prefix . 'fafar_cf7crud_submissions';
     
-    // print_r( "<br><br>" );
-    // print_r( $tag );
+    if ( is_admin() ) return $tag;
 
-    if( empty( $tag['options'] ) ) return $tag;
+    $option_display_value = get_tag_option_value( $tag, 'fa-crud-display' );
 
-    foreach( $tag['options'] as $key => $value ) {
+    if ( $option_display_value === false ) return $tag;
 
-        if( str_contains( $tag['options'][$key], 'fafar-cf7crud-current-data' ) ) {
+    /**
+     * Column Filter Part
+    */
+    $option_column_filter_value = get_tag_option_value( $tag, 'fa-crud-column-filter' ); 
+    $query_filter_column_part = '';
+    if ( $option_column_filter_value !== false ) {
 
-            $tag = fafar_cf7crud_set_current_submission_value( $tag, $key );
+        // Expected: fa-crud-column-filter:COLUMN_1|VALUE_1:COLUMN_2|VALUE_2
+        $filter_pairs     = explode( ":", $option_column_filter_value );
+        $filter_pairs     = array_slice( $filter_pairs, 1 );
+        $where_column_arr = array();
+        foreach ( $filter_pairs as $filter ) {
+    
+            if ( count( explode( "|", $filter ) ) != 2 ) continue;
 
+            $key   = explode( "|", $filter )[0];
+            $value = explode( "|", $filter )[1];
+
+            if( $value === 'this' ) {
+
+                $submission_decoded = fafar_cf7crud_get_current_submission( true );
+
+                if( $submission_decoded === false || ! isset( $submission_decoded[$key] ) ) continue;
+
+                $value = $submission_decoded[$key];
+
+            }
+
+            $comparison = '`' . $key . '` = "' . $value . '"';
+            if ( $key === 'form_id' || $key === 'is_active' )
+                $comparison = '`' . $key . '` = ' . $value ." ";
+
+            array_push( $where_column_arr, $comparison );
+    
         }
 
+        if ( count( $where_column_arr ) > 0 ) 
+            $query_filter_column_part = implode( " AND ", $where_column_arr );
+
     }
+
+    /**
+     * JSON Filter Part
+    */
+    $option_json_filter_value = get_tag_option_value( $tag, 'fa-crud-json-filter' );  
+    $query_filter_json_part = '';
+    if ( $option_json_filter_value !== false ) {
+
+        // Expected: fa-crud-column-filter:PROP_JSON_1|VALUE_1:PROP_JSON_2|VALUE_2
+        $filter_pairs   = explode( ":", $option_json_filter_value );
+        $filter_pairs   = array_slice( $filter_pairs, 1 );
+        $where_json_arr = array();
+        foreach ( $filter_pairs as $filter ) {
+    
+            if ( count( explode( "|", $filter ) ) != 2 ) continue;
+
+            $key   = explode( "|", $filter )[0];
+            $value = explode( "|", $filter )[1];
+
+            if( $value === 'this' ) {
+
+                $submission_decoded = fafar_cf7crud_get_current_submission( true );
+
+                if( $submission_decoded === false || ! isset( $submission_decoded[$key] ) ) continue;
+                
+                $value = $submission_decoded[$key];
+
+            }
+
+            $where_json_arr[$key] = $value;
+    
+        }
+
+        if ( count( $where_column_arr ) > 0 ) 
+            $query_filter_json_part = 'JSON_CONTAINS( data, \'' . json_encode( $where_json_arr ) . '\')';
+
+    }
+
+    $query = 'SELECT * FROM `' . $table_name . '`';
+
+    if ( $query_filter_column_part !== "" &&
+            $query_filter_json_part !== "" ) {
+            
+        $query .= ' WHERE ' . $query_filter_column_part . ' AND ' . $query_filter_json_part;
+
+    } else if ( $query_filter_column_part !== "" ) {
+
+        $query .= ' WHERE ' . $query_filter_column_part;
+
+    } else if ( $query_filter_json_part !== "" ) {
+
+        $query .= ' WHERE ' . $query_filter_json_part;
+
+    }
+
+    //print_r("<br/> // || // <br/>");
+    //print_r($query);
+
+    $submissions = $fafar_cf7crud_db->get_results( $query );
+
+    if ( empty( $submissions ) ) return $tag;
+
+    // Expected: fa-crud-display:LABEL_PROP|VALUE_PROP
+    $option_display_value = explode( ":", $option_display_value )[1];
+    $label_prop = explode( "|", $option_display_value )[0];
+    $value_prop = explode( "|", $option_display_value )[1];
+
+    foreach ( $submissions as $submission ){
+
+        $submission_decoded = fafar_cf7crud_join_submission_props( $submission );
+        
+        if( ! isset( $submission_decoded[$label_prop] ) || 
+            ! isset( $submission_decoded[$value_prop] ) ) continue;
+
+        $raw_value = $submission_decoded[$label_prop] . "|" . $submission_decoded[$value_prop];
+        array_push( $tag['raw_values'], $raw_value );
+
+        $value = $submission_decoded[$label_prop];
+        array_push( $tag['values'], $value );
+
+    }
+
+    //print_r( "<br><br>" );
+    //print_r( $tag );
 
     return $tag;
 
 }
 
 /*
- * This funcion sets the input with the current submission prop value.
- * Syntax:
- * fafar-cf7crud-current-data:PROP_OF_CURRENT_SUBMISSION
+ * This function join all submissions properties(columns and json) 
+ * from $wpdb->get_results in one php array.
  *
  * @since 1.0.0
- * @param  CF7 Tag Object $tag  CF7 tag object from contact-form-7/includes/form-tags-manager.php
- * @param  CF7 Tag Object $tag  CF7 tag object from contact-form-7/includes/form-tags-manager.php
- * @return CF7 Tag Object $tag  CF7 tag object from contact-form-7/includes/form-tags-manager.php
+ * @param mixed $submission Return from $wpdb->get_results
+ * @return array $submission_decoded  Submission decoded
 */
-function fafar_cf7crud_set_current_submission_value( $tag, $data_option_key ) {
+function fafar_cf7crud_join_submission_props( $submission ) {
 
-    $data_prop_pattern = 
-        '/^fafar-cf7crud-current-data\:[a-zA-Z0-9-_]+$/';
+    $submission_decoded = (array) json_decode( $submission->data );
+    
+    $submission_decoded["id"]           = $submission->id;
+    $submission_decoded["form_id"]      = $submission->form_id;
+    $submission_decoded["object_name"]  = $submission->object_name;
+    $submission_decoded["is_active"]    = $submission->is_active;
+    $submission_decoded["updated_at"]   = $submission->updated_at;
+    $submission_decoded["created_at"]   = $submission->created_at;
 
-    if ( ! preg_match( $data_prop_pattern, $tag['options'][$data_option_key] ) ) return $tag;
-
-    $prop = explode( ":", $tag['options'][$data_option_key] )[1];
-
-    // TODO: MAKE A FUNCTION TO GET DATA PROP
-
-    print_r( " || " );
-    print_r( $where_column );
-    print_r( " <br> " );
-    print_r( $where_json_prop );
-
-
-    return $tag;
-
+    return $submission_decoded;
 }
 
-
 /*
- * >>>>>>>>>>> THIS FUNCTION IS NOT BEEN USED <<<<<<<<<<<<<<<
+ * This function gets the current submission on db.
  * 
- * HAVE TO ABORT THIS IMPLEMENTATION FOR A CF7 COMPATIBILITY ISSUE.
- * THIS IS HERE TO BE A SOURCE OF IDEIAS.
- * 
- * This funcion sets the input value dinamically.
- * Syntax:
- * fafar-cf7crud-data:PROP_LABEL|PROP_VALUE:(C_1:VALUE;C_2:VALUE):(PROP_JSON_1:VALUE;PROP_JSON_2:VALUE)
- * 
+ * if $decode equals to true, then uses 'fafar_cf7crud_join_submission_props' 
+ * function.
+ *
  * @since 1.0.0
- * @param  CF7 Tag Object $tag  CF7 tag object from contact-form-7/includes/form-tags-manager.php
- * @param  CF7 Tag Object $tag  CF7 tag object from contact-form-7/includes/form-tags-manager.php
- * @return CF7 Tag Object $tag  CF7 tag object from contact-form-7/includes/form-tags-manager.php
+ * @return mixed|array $submission Return from $wpdb->get_results
 */
-function fafar_cf7crud_set_value_dynamically( $tag, $data_option_key ) {
+function fafar_cf7crud_get_current_submission( $decode = false ) {
 
-    $data_prop_pattern = 
-        '/^fafar-cf7crud-data\:[[a-zA-Z0-9-_]+\|[a-zA-Z0-9-_]+\;\([a-zA-Z0-9-_:;]*\)\;\([a-zA-Z0-9-_:;]*\)$/';
+    global $wpdb;
+    /*
+     * If other database should be used.
+     */
+    $fafar_cf7crud_db = apply_filters( 'fafar_cf7crud_set_database', $wpdb );
+    $table_name       = $fafar_cf7crud_db->prefix . 'fafar_cf7crud_submissions';
 
-    if ( ! preg_match( $data_prop_pattern, $tag['options'][$data_option_key] ) ) return $tag;
+    if( ! isset( $_GET['id'] ) ) return false;
+    
+    $query = "SELECT * FROM `" . 
+                $table_name . 
+                "` WHERE `id` = '" . 
+                $_GET['id'] . 
+                "'";  
 
-    $html_props = explode( ":", $tag['options'][$key] )[1];
-    $column_filter_session = explode( ":", $tag['options'][$key] )[2];
-    $json_props_filter_session = explode( ":", $tag['options'][$key] )[3];
+    $submission = $fafar_cf7crud_db->get_results( $query );
 
-    $where_column_arr   = array();
-    $column_filters = explode( ";", $column_filter_session );
-    foreach ( $column_filters as $filter ) {
-
-        $key        = explode( ":", $filter )[0];
-        $value      = explode( ":", $filter )[1];
-        $comparison = '´' . $key . '´ = "' . $value . '"';
-
-        array_push( $where_column_arr, $comparison );
-
-    }
-
-    $where_column = implode( " AND ", $where_column_arr );
-
-    $where_json_prop_arr   = array();
-    $json_prop_filters = explode( ";", $json_prop_filter_session );
-    foreach ( $json_prop_filters as $filter ) {
-
-        $key        = explode( ":", $filter )[0];
-        $value      = explode( ":", $filter )[1];
-        $comparison = '´' . $key . '´ = "' . $value . '"';
-
-        array_push( $where_json_prop_arr, $comparison );
-
-    }
-
-    $where_json_prop = implode( " AND ", $where_json_prop_arr );
-
-    print_r( " || " );
-    print_r( $where_column );
-    print_r( " <br> " );
-    print_r( $where_json_prop );
-
-
-    return $tag;
-
+    return ( $decode ) ? 
+        fafar_cf7crud_join_submission_props( $submission[0] ) : 
+        $submission_decoded[0];
 }
 
 /*
@@ -413,7 +496,7 @@ function fafar_cf7crud_pre_set_input_value( $tag ) {
     if ( is_admin() ) return $tag;
 
 
-    if ( !isset( $_GET['id'] ) ) return $tag;
+    if ( ! isset( $_GET['id'] ) ) return $tag;
 
 
     if ( $tag['basetype'] == 'file' ) {
@@ -557,7 +640,7 @@ function fafar_cf7crud_get_file_attrs() {
  * @param array          $values  Values to compare and set as default.
  * @return $tag
 */
-function fafar_cf7crud_set_tag_default_options( $tag, $values ) {
+function fafar_cf7crud_set_tag_default_options( $tag, $values ) { 
 
     $default_arr = array();
     foreach ($values as $value) {
@@ -576,14 +659,13 @@ function fafar_cf7crud_set_tag_default_options( $tag, $values ) {
     }
 
     $default = 'default: ' . implode( "_", $default_arr );
-    foreach( $tag['options'] as $key => $value ) {
+    
+    $default_option_index = get_tag_option_value( $tag, 'default', true );
+    
+    if ( $default_option_index ) {
 
-        if ( str_contains( $value, 'default' ) ) {
-
-            $tag['options'][$key] = $default;
-            return $tag;
-
-        }
+        $tag['options'][$default_option_index] = $default;
+        return $tag;
 
     }
 
@@ -646,10 +728,21 @@ function get_tag_option_value( $tag, $option, $return_option_index = false ) {
 
     foreach ( $tag['options'] as $index => $value ) {
 
-        if ( $tag['options'][$index] === $option ) {
+        /**
+         * We can assume that every option has a ':'
+         * to separate the value, if has any.
+         * At least the ones we at threating here has.
+         * 
+         * Ex: 'default: 1'
+         * 
+         * So....
+        */
+        $key_option = explode( ":", $option )[0];
+
+        if ( str_contains( $value, $key_option ) ) {
             
             if ( $return_option_index )
-                else $index;
+                return $index;
             else
                 return $value;
             
