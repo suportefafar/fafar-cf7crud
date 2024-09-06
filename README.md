@@ -10,16 +10,25 @@ O plugin **FAFAR Contact Form 7 CRUD** salva os envios do formulário de contato
 
 ### Lendo
 
-O plugin "FAFAR CF7CRUD" cria um shortcode simples para mostrar um determinado envio por seu 'id'.
+_A funcionalidade não foi implementada até o presente momento._
 
 ### Editando
 
 Este plugin lê o formulário CF7, procurando por uma entrada oculta com name='id'.
 Se existir, "FAFAR CF7CRUD" sabe que é um formulário de atualização.
 
-### Deletando
+### Deletando (EM BREVE)
 
-Disponibiliza um botão por meio de um shortcode para excluir um envio por 'id'.
+_A funcionalidade não foi implementada até o presente momento._
+
+Disponibiliza um botão por meio de um shortcode para _excluir_ a _submissão_.  
+O shortode recebe um parâmetro: 'id' da submissão.  
+A submissão **não** é de fato excluída, mas apenas muda o valor da coluna 'is_active' para 0(zero).
+A exclusão efetiva pode ser feita por meio do action hook 'fafar_cf7crud_after_delete', que passa o 'id' da submissão por parâmetro:
+
+```
+do_action( 'fafar_cf7crud_after_delete', $id );
+```
 
 ## Banco de Dados
 
@@ -50,6 +59,43 @@ Uso:
 1: Ativado;  
 0: Desativado;  
 ( Ou o que a criatividade mandar )
+
+## Opções de Formulário
+
+Para tag's de multipla opção como select e checkbox, é possível utilizar a propriedade 'fafar-cf7crud-dynamic-data', que faz uma busca na tabela 'fafar-cf7crud-submissions', pelos parametros informados.  
+Sintaxe geral:  
+fafar-cf7crud-data:PROPRIEDADE_LABEL|PROPRIEDADE_VALOR:(FILTROS_DE_COLUNA):(FILTROS_DE_PROPRIEDADE_JSON_DA_COLUNA_DATA)  
+Específico:  
+fafar-cf7crud-data:PROPRIEDADE_LABEL|PROPRIEDADE_VALOR:(COLUNA_1:VALOR;COLUNA_2:VALOR):(PROPRIEDADE_JSON_DA_COLUNA_DATA_1:VALOR;PROPRIEDADE_JSON_DA_COLUNA_DATA_2:VALOR)
+
+'PROPRIEDADE_LABEL' e 'PROPRIEDADE_VALOR' aceita o nome de coluna ou propriedade json da coluna 'data'.
+
+PROPRIEDADE_LABEL e PROPRIEDADE_VALOR aceitam apenas letras, números e hífen(-). FILTROS_DE_COLUNA e FILTROS_DE_PROPRIEDADE_JSON_DA_COLUNA_DATA aceitam apenas letras, números, hífen(-), dois pontos(:) e 'ponto-e-vírgula'(;).
+
+Exemplo:
+
+```
+[select* car-models fafar-cf7crud-data:model|id;(is_active:1;object_name:car);(brand:Renault;model:Sandero)]
+ou
+[select* car-models fafar-cf7crud-data:model|motor;(is_active:1;object_name:car);(brand:Renault;model:Sandero)]
+```
+
+Saída:
+
+```
+<option value='kjh34sfdg'>Renault<option>
+ou
+<option value='SCe 1.6'>Renault<option>
+```
+
+Se um dos filtros não for usado, deve se manter o abre e fecha parênteses:
+
+```
+[select* car-models fafar-cf7crud-data:model|id;();(brand:Renault;model:Sandero)]
+
+```
+
+Pode-se usar a palavra 'this' para representar o valor da submissão atual.
 
 ### Banco de Dados Customizado
 
