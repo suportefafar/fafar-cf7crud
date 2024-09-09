@@ -260,9 +260,7 @@ function fafar_cf7crud_before_send_mail_create( $contact_form, $submission ) {
         'data'        => $form_data_as_json,
     ) );
 
-    
-    $insert_id = $fafar_cf7crud_db->insert_id;
-    do_action( 'fafar_cf7crud_after_create', $insert_id );
+    do_action( 'fafar_cf7crud_after_create', $unique_hash );
 
     return true;
 }
