@@ -246,7 +246,14 @@ function fafar_cf7crud_before_send_mail_create( $contact_form, $submission ) {
      */
     $form_data = apply_filters('fafar_cf7crud_before_create', $form_data);
 
-    if ( $form_data === null ) return false;
+    if ( isset( $form_data["error_msg"] ) ) {
+        add_filter("wpcf7_ajax_json_echo", function ($response, $result) {
+            $response["status"] = "mail_sent_ng";
+            $response["message"] = $form_data["error_msg"];
+            return $response;
+        }, 10, 2);
+        return false;
+    }
 
     $form_post_id      = $contact_form->id();
     $form_data_as_json = json_encode( $form_data );
