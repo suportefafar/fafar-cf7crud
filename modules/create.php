@@ -13,17 +13,17 @@ function fafar_cf7crud_sanitize( $value, $type = null ) {
 
     if( ! $value ) return "";
 
-    if( str_contains( $type, 'fafar-cf7crud-san-lb-' ) )
+    if( str_contains( $type, 'far_san_lb_' ) )
         return sanitize_textarea_field( $value );
 
-    else if( str_contains( $type, 'fafar-cf7crud-san-em-' ) )
+    else if( str_contains( $type, 'far_san_em_' ) )
         return sanitize_email( $value );
 
-    else if( str_contains( $type, 'fafar-cf7crud-san-fi-' ))
+    else if( str_contains( $type, 'far_san_fi_' ) )
         return sanitize_file_name( $value );
 
-    else if( str_contains( $type, 'fafar-cf7crud-san-key-' ))
-        r( $value );
+    else if( str_contains( $type, 'far_san_key_' ) )
+        return sanitize_key( $value );
 
     return sanitize_text_field( $value );
 }
@@ -40,6 +40,7 @@ function fafar_cf7crud_before_send_mail_create( $contact_form, $submission ) {
 
     global $wpdb;
 
+    // TODO: update return msg method
     // Submission not found
     if ( ! $submission ) {
     
@@ -70,8 +71,8 @@ function fafar_cf7crud_before_send_mail_create( $contact_form, $submission ) {
     /*
      * Generating unique hash for submission 'id'2
      */
-    $bytes                 = random_bytes(5);
-    $unique_hash           = time().bin2hex($bytes); 
+    $bytes       = random_bytes(5);
+    $unique_hash = time().bin2hex($bytes); 
 
     /*
     *  CF7 uploads the files to it's own folder.
@@ -183,18 +184,19 @@ function fafar_cf7crud_before_send_mail_create( $contact_form, $submission ) {
     foreach ($posted_data as $key => $value) {
         
         /**
-         * Jump's at 'fafar-cf7crud-object-name' to use it as column on DB
+         * Ignore 'fafar-cf7crud-object-name' to use it as column on DB
         */
-        if( $key === 'fafar-cf7crud-object-name' ) continue;
+        if( str_contains( $key, 'far_db_column_' ) ) continue;
+        
 
         /**
-         * Jump's field whitch $key do not appears on 
+         * Ignore field whitch $key do not appears on 
          * original form WPCF7_FormTag Object.
          */
         if ( ! in_array( $key, $allowed_tags ) ) continue;
 
         /**
-         * Jump's field whitch $key do appears on 
+         * Ignore field whitch $key do appears on 
          * $not_allowed_fields array.
          */
         if ( in_array( $key, $not_allowed_fields ) ) continue;
@@ -206,7 +208,7 @@ function fafar_cf7crud_before_send_mail_create( $contact_form, $submission ) {
          */
         if ( isset( $files_to_database[$key] ) ) {
 
-            $file_prefix = 'fafar-cf7crud-file-';
+            $file_prefix = 'fafar_cf7crud_file_';
 
             $form_data[sanitize_key( $file_prefix . $key )] = $files_to_database[$key];
 
@@ -246,26 +248,58 @@ function fafar_cf7crud_before_send_mail_create( $contact_form, $submission ) {
      */
     $form_data = apply_filters('fafar_cf7crud_before_create', $form_data);
 
-    if ( isset( $form_data["error_msg"] ) ) {
-        add_filter("wpcf7_ajax_json_echo", function ($response, $result) {
-            $response["status"] = "mail_sent_ng";
-            $response["message"] = $form_data["error_msg"];
+    if ( ! $form_data ) {
+
+        add_filter('wpcf7_ajax_json_echo', function ($response, $result) {
+            $response['status'] = 'mail_sent_ng';
+            $response['message'] = 'Unknow error. Some function return null from "fafar_cf7crud_before_create" hook.';
             return $response;
         }, 10, 2);
+
         return false;
     }
+
+    if ( isset( $form_data['error_msg'] ) ) {
+
+        add_filter('wpcf7_ajax_json_echo', function ($response, $result) {
+            $response['status'] = 'mail_sent_ng';
+            $response['message'] = $form_data['error_msg'];
+            return $response;
+        }, 10, 2);
+
+        return false;
+    }
+
+    if ( isset( $form_data['far_prevent_submit'] ) && 
+            $form_data['far_prevent_submit'] === true )
+                return true;
 
     $form_post_id      = $contact_form->id();
     $form_data_as_json = json_encode( $form_data );
 
-    $object_name = $posted_data['fafar-cf7crud-object-name'] ?? '';
-
-    $fafar_cf7crud_db->insert( $table_name, array(
+    $new_data = array(
         'id'          => $unique_hash,
-        'form_id'     => $form_post_id,
-        'object_name' => $object_name,
         'data'        => $form_data_as_json,
-    ) );
+        'form_id'     => $form_post_id
+    );
+
+    $columns = $fafar_cf7crud_db->get_results("SHOW COLUMNS FROM $table_name");
+
+    foreach ($columns as $column) {
+
+        $column_name = $column->Field;
+
+        if ( isset( $posted_data['far_db_column_' . $column_name] ) &&
+                $posted_data['far_db_column_' . $column_name] ) {
+            $new_data[$column_name] = 
+                fafar_cf7crud_sanitize( 
+                    $posted_data['far_db_column_' . $column_name] 
+                );
+        }
+
+    }
+
+    $fafar_cf7crud_db->insert( $table_name, $new_data );
 
     do_action( 'fafar_cf7crud_after_create', $unique_hash );
 

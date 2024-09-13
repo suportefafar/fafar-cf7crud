@@ -1,9 +1,7 @@
 window.addEventListener("DOMContentLoaded", () => {
-  // DOM ready! Images, frames, and other subresources are still downloading.
-  // Set listener to custom file input button
   fafarCf7CrudSetButtonListener();
 
-  // Set listener to stock input
+  // Set listener to stock input when file is selected
   fafarCf7CrudSetStockFileInputListener();
 });
 
@@ -37,10 +35,12 @@ function fafarCf7OnChangeCrudInputHandler(event) {
 
   const fileName = this.files[0] ? this.files[0].name : "";
   this.setAttribute("value", fileName);
+  console.log(attr_name);
+  console.log(fileName);
 
   document
     .querySelector(
-      'input[name="fafar-cf7crud-input-file-hidden-' + attr_name + '"]'
+      'input[name="fafar_cf7crud_input_file_hidden_' + attr_name + '"]'
     )
     .setAttribute("value", fileName);
 

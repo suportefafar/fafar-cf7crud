@@ -6,8 +6,6 @@ add_filter( 'wpcf7_form_tag', 'fafar_cf7crud_pre_set_input_value' );
 add_filter( 'wpcf7_form_elements', 'fafar_cf7crud_create_custom_file_type_input' );
 add_filter( 'wpcf7_form_elements', 'fafar_cf7crud_add_submission_id_hidden' );
 
-
-
 /*
  * Called on 'wpcf7_before_send_mail' filter hook
  * Function to update a submission
@@ -21,6 +19,7 @@ function fafar_cf7crud_before_send_mail_update( $contact_form, $submission ) {
 
     global $wpdb;
 
+    // TODO: update return msg method
     // Submission not found
     if ( ! $submission ) {
     
@@ -46,7 +45,7 @@ function fafar_cf7crud_before_send_mail_update( $contact_form, $submission ) {
 
     }
 
-    /*
+   /*
      * If other database should be used.
      */
     $fafar_cf7crud_db = apply_filters( 'fafar_cf7crud_set_database', $wpdb );
@@ -62,12 +61,9 @@ function fafar_cf7crud_before_send_mail_update( $contact_form, $submission ) {
      );
 
     /*
-     * Generating unique hash for submission 'id' 
-     * if not passed
+     * Get submission ID form field previously set by 'fafar_cf7crud_add_submission_id_hidden()'
      */
-    $bytes       = random_bytes(5);
-    $unique_hash = $submission->get_posted_data( "fafar-cf7crud-submission-id" ); // Update routine diff
-
+    $unique_hash = $submission->get_posted_data( "fafar-cf7crud-submission-id" );
 
     /*
     *  CF7 uploads the files to it's own folder.
@@ -86,7 +82,7 @@ function fafar_cf7crud_before_send_mail_update( $contact_form, $submission ) {
     foreach ($cf7_uploaded_files as $file_key => $file) {
 
         $file = is_array( $file ) ? reset( $file ) : $file;
-        if ( ! empty($file) ) {
+        if( ! empty($file) ) {
 
             $filename = $unique_hash . '-' . $file_key . '-' . basename( $file );
 
@@ -157,7 +153,7 @@ function fafar_cf7crud_before_send_mail_update( $contact_form, $submission ) {
     $tags  = $contact_form->scan_form_tags();
 
     foreach( $tags as $tag ){
-        if ( ! empty($tag->name) ) $tags_names[] = $tag->name;
+        if( ! empty($tag->name) ) $tags_names[] = $tag->name;
     }
     
     $allowed_tags       = apply_filters( 'fafar_cf7crud_allowed_tags', $tags_names );
@@ -179,25 +175,25 @@ function fafar_cf7crud_before_send_mail_update( $contact_form, $submission ) {
     foreach ($posted_data as $key => $value) {
         
         /**
-         * Jump's at 'fafar-cf7crud-submission-id' because is just used to retrieve 
+         * Ignores 'fafar-cf7crud-submission-id' because is just used to retrieve 
          * the submission ID.
          * Update routine diff
         */
         if ( $key == 'fafar-cf7crud-submission-id' ) continue;
 
         /**
-         * Jump's at 'fafar-cf7crud-object-name' to use it as column on DB
+         * Ignores 'fafar-cf7crud-object-name' to use it as column on DB
         */
-        if ( $key === 'fafar-cf7crud-object-name' ) continue;
+        if( str_contains( $key, 'far_db_column_' ) ) continue;
 
         /**
-         * Jump's field whitch $key do not appears on 
+         * Ignores field whitch $key do not appears on 
          * original form WPCF7_FormTag Object.
          */
         if ( ! in_array( $key, $allowed_tags ) ) continue;
 
         /**
-         * Jump's field whitch $key do appears on 
+         * Ignores field whitch $key do appears on 
          * $not_allowed_fields array.
          */
         if ( in_array( $key, $not_allowed_fields ) ) continue;
@@ -209,7 +205,7 @@ function fafar_cf7crud_before_send_mail_update( $contact_form, $submission ) {
          */
         if ( isset( $files_to_database[$key] ) ) {
 
-            $file_prefix = 'fafar-cf7crud-file-';
+            $file_prefix = 'fafar_cf7crud_file_';
 
             $form_data[sanitize_key( $file_prefix . $key )] = $files_to_database[$key];
 
@@ -249,23 +245,60 @@ function fafar_cf7crud_before_send_mail_update( $contact_form, $submission ) {
      */
     $form_data = apply_filters('fafar_cf7crud_before_update', $form_data);
 
-    if ( isset( $form_data["error_msg"] ) ) {
-        add_filter("wpcf7_ajax_json_echo", function ($response, $result) {
-            $response["status"] = "mail_sent_ng";
-            $response["message"] = $form_data["error_msg"];
+    if ( ! $form_data ) {
+
+        add_filter('wpcf7_ajax_json_echo', function ($response, $result) {
+            $response['status'] = 'mail_sent_ng';
+            $response['message'] = 'Unknow error. Some function return null from "fafar_cf7crud_before_update" hook.';
             return $response;
         }, 10, 2);
+
         return false;
     }
+
+    if ( isset( $form_data['error_msg'] ) ) {
+
+        add_filter('wpcf7_ajax_json_echo', function ($response, $result) {
+            $response['status'] = 'mail_sent_ng';
+            $response['message'] = $form_data['error_msg'];
+            return $response;
+        }, 10, 2);
+
+        return false;
+    }
+
+    if ( isset( $form_data['far_prevent_submit'] ) && 
+            $form_data['far_prevent_submit'] === true )
+                return true;
 
     $form_post_id      = $contact_form->id();
     $form_data_as_json = json_encode( $form_data );
 
+    $new_data = array(
+        'id'          => $unique_hash,
+        'data'        => $form_data_as_json,
+        'form_id'     => $form_post_id
+    );
+
+    $columns = $fafar_cf7crud_db->get_results("SHOW COLUMNS FROM $table_name");
+
+    foreach ($columns as $column) {
+
+        $column_name = $column->Field;
+
+        if ( isset( $posted_data['far_db_column_' . $column_name] ) &&
+                $posted_data['far_db_column_' . $column_name] ) {
+            $new_data[$column_name] = 
+                fafar_cf7crud_sanitize( 
+                    $posted_data['far_db_column_' . $column_name] 
+                );
+        }
+
+    }
+
     $fafar_cf7crud_db->update(
         $table_name,
-        array(
-            'data' => $form_data_as_json
-        ),
+        $new_data,
         array(
             'id' => $unique_hash
         )
@@ -299,18 +332,18 @@ function fafar_cf7crud_populate_input_value_dynamically( $tag ) {
     
     if ( is_admin() ) return $tag;
 
-    $option_display_value = get_tag_option_value( $tag, 'fa-crud-display' );
+    $option_display_value = get_tag_option_value( $tag, 'far_crud_display' );
 
     if ( $option_display_value === false ) return $tag;
 
     /**
      * Column Filter Part
     */
-    $option_column_filter_value = get_tag_option_value( $tag, 'fa-crud-column-filter' ); 
+    $option_column_filter_value = get_tag_option_value( $tag, 'far_crud_column_filter' ); 
     $query_filter_column_part = '';
     if ( $option_column_filter_value !== false ) {
 
-        // Expected: fa-crud-column-filter:COLUMN_1|VALUE_1:COLUMN_2|VALUE_2
+        // Expected: far_crud_column_filter:COLUMN_1|VALUE_1:COLUMN_2|VALUE_2
         $filter_pairs     = explode( ":", $option_column_filter_value );
         $filter_pairs     = array_slice( $filter_pairs, 1 );
         $where_column_arr = array();
@@ -332,8 +365,6 @@ function fafar_cf7crud_populate_input_value_dynamically( $tag ) {
             }
 
             $comparison = '`' . $key . '` = "' . $value . '"';
-            if ( $key === 'form_id' || $key === 'is_active' )
-                $comparison = '`' . $key . '` = ' . $value ." ";
 
             array_push( $where_column_arr, $comparison );
     
@@ -347,11 +378,11 @@ function fafar_cf7crud_populate_input_value_dynamically( $tag ) {
     /**
      * JSON Filter Part
     */
-    $option_json_filter_value = get_tag_option_value( $tag, 'fa-crud-json-filter' );  
+    $option_json_filter_value = get_tag_option_value( $tag, 'far_crud_json_filter' );  
     $query_filter_json_part = '';
     if ( $option_json_filter_value !== false ) {
 
-        // Expected: fa-crud-column-filter:PROP_JSON_1|VALUE_1:PROP_JSON_2|VALUE_2
+        // Expected: far_crud_json_filter:PROP_JSON_1|VALUE_1:PROP_JSON_2|VALUE_2
         $filter_pairs   = explode( ":", $option_json_filter_value );
         $filter_pairs   = array_slice( $filter_pairs, 1 );
         $where_json_arr = array();
@@ -405,7 +436,7 @@ function fafar_cf7crud_populate_input_value_dynamically( $tag ) {
 
     if ( empty( $submissions ) ) return $tag;
 
-    // Expected: fa-crud-display:LABEL_PROP|VALUE_PROP
+    // Expected: far_crud_display:LABEL_PROP|VALUE_PROP
     $option_display_value = explode( ":", $option_display_value )[1];
     $label_prop = explode( "|", $option_display_value )[0];
     $value_prop = explode( "|", $option_display_value )[1];
@@ -430,28 +461,6 @@ function fafar_cf7crud_populate_input_value_dynamically( $tag ) {
 
     return $tag;
 
-}
-
-/*
- * This function join all submissions properties(columns and json) 
- * from $wpdb->get_results in one php array.
- *
- * @since 1.0.0
- * @param mixed $submission Return from $wpdb->get_results
- * @return array $submission_decoded  Submission decoded
-*/
-function fafar_cf7crud_join_submission_props( $submission ) {
-
-    $submission_decoded = (array) json_decode( $submission->data );
-    
-    $submission_decoded["id"]           = $submission->id;
-    $submission_decoded["form_id"]      = $submission->form_id;
-    $submission_decoded["object_name"]  = $submission->object_name;
-    $submission_decoded["is_active"]    = $submission->is_active;
-    $submission_decoded["updated_at"]   = $submission->updated_at;
-    $submission_decoded["created_at"]   = $submission->created_at;
-
-    return $submission_decoded;
 }
 
 /*
@@ -508,7 +517,7 @@ function fafar_cf7crud_pre_set_input_value( $tag ) {
 
     if ( $tag['basetype'] == 'file' ) {
 
-        $input_value = fafar_cf7crud_get_submission_data_prop( 'fafar-cf7crud-file-' . $tag['name'] );
+        $input_value = fafar_cf7crud_get_submission_data_prop( 'fafar_cf7crud_file_' . $tag['name'] );
 
         $tag['raw_values'] = $input_value;
         return $tag;
@@ -611,20 +620,26 @@ function fafar_cf7crud_get_file_attrs() {
 
     global $wpdb;
 
-    $fafar_cf7crud_db = apply_filters( 'fafar_cf7crud_database', $wpdb ); // Caso queira mudar o banco de dados
+   /*
+    * If other database should be used.
+    */
+    $fafar_cf7crud_db = apply_filters( 'fafar_cf7crud_set_database', $wpdb );
+    $table_name       = $fafar_cf7crud_db->prefix . 'fafar_cf7crud_submissions';
 
-    $assistido = $fafar_cf7crud_db->get_results("SELECT * FROM `" . $fafar_cf7crud_db->prefix . 'fafar_cf7crud_submissions' . "` WHERE `id` = '" . $_GET['id'] . "'" );
+    $submissions = $fafar_cf7crud_db->get_results(
+        "SELECT * FROM `" . $table_name . "` WHERE `id` = '" . $_GET['id'] . "'" 
+    );
 
     $file_attrs = array();
 
-	if ( !$assistido[0] )
+	if ( !$submissions[0] )
         return $file_attrs;
 	
-	$form_data = json_decode( $assistido[0]->data );
+	$form_data = json_decode( $submissions[0]->data );
 
 	foreach ( $form_data as $chave => $data ) {
 
-        if ( strpos( $chave, 'fafar-cf7crud-file-' ) !== false ) {
+        if ( strpos( $chave, 'fafar_cf7crud_file_' ) !== false ) {
 
             $file_attrs[ $chave ] = $data;
 
@@ -692,18 +707,22 @@ function fafar_cf7crud_get_submission_data_prop( $json_prop ) {
 
     global $wpdb;
 
-    $fafar_cf7crud_db = apply_filters( 'fafar_cf7crud_database', $wpdb );
+   /*
+    * If other database should be used.
+    */
+    $fafar_cf7crud_db = apply_filters( 'fafar_cf7crud_set_database', $wpdb );
+    $table_name       = $fafar_cf7crud_db->prefix . 'fafar_cf7crud_submissions';
 
     $query = "SELECT * FROM `" . 
-        $fafar_cf7crud_db->prefix . "fafar_cf7crud_submissions`" .
-        " WHERE `id` = '" . $_GET['id'] . "'";
+        $table_name .
+        "` WHERE `id` = '" . $_GET['id'] . "'";
 
-    $submission = $fafar_cf7crud_db->get_results( $query );
+    $submissions = $fafar_cf7crud_db->get_results( $query );
 
-	if ( !$submission[0] ) 
+	if ( !$submissions[0] ) 
         return [];
 	
-	$data_json = json_decode( $submission[0]->data );
+	$data_json = json_decode( $submissions[0]->data );
 
 	foreach ( $data_json as $key => $value ) {
 
@@ -803,7 +822,7 @@ function fafar_cf7crud_get_custom_input_file( $input_file_str, $file_attrs ) {
     $name_attr = str_replace( '"' , '', $name_attr );
 
     // Set attr as database saved
-    $key_attr_with_file_db_sufix = 'fafar-cf7crud-file-' . $name_attr;
+    $key_attr_with_file_db_sufix = 'fafar_cf7crud_file_' . $name_attr;
 
     // Get current attr value: String | ""
     $value_attr = fafar_cf7crud_get_input_file_attr_value( $key_attr_with_file_db_sufix, $file_attrs );
@@ -815,7 +834,7 @@ function fafar_cf7crud_get_custom_input_file( $input_file_str, $file_attrs ) {
     $custom_input_file .= "Arquivo";
     $custom_input_file .= "</button>";
     $custom_input_file .= "<span class='fafar-cf7crud-input-document-name' data-file-input-label='" . $name_attr . "'>";
-    $custom_input_file .= ( $value_attr ) ? $value_attr : "Selecione um arquivo";
+    $custom_input_file .= ( $value_attr ?? "Selecione um arquivo" );
     $custom_input_file .= "</span>";
     $custom_input_file .= "</div>";
 
@@ -827,8 +846,33 @@ function fafar_cf7crud_get_custom_input_file( $input_file_str, $file_attrs ) {
 
     // Building a hidden input to store the file names
     $input_hidden_to_store_file_path = 
-        "<input class='wpcf7-form-control wpcf7-hidden' name='fafar-cf7crud-input-file-hidden-" . $name_attr . "' value='" . ( ( $value_attr ) ? $value_attr : "" ) . "' type='hidden' />";
+        "<input class='wpcf7-form-control wpcf7-hidden' name='fafar_cf7crud_input_file_hidden_" . $name_attr . "' value='" . ( $value_attr ?? "" ) . "' type='hidden' />";
 
 
     return $input_file_str . $custom_input_file . $input_hidden_to_store_file_path;
+}
+
+
+/*
+ * This function join all submissions properties(columns and json) 
+ * from $wpdb->get_results in one php array.
+ *
+ * @since 1.0.0
+ * @param mixed $submission Return from $wpdb->get_results
+ * @return array $submission_decoded  Submission decoded
+*/
+function fafar_cf7crud_join_submission_props( $submission ) {
+
+    
+    foreach($submission as $key => $value) {
+        
+        if ( $key === 'data' )
+            $submission_joined['data'] = json_decode( $value );
+    
+        $submission_joined[$key] = $value;
+            
+    }
+    
+    return $submission_joined;
+
 }

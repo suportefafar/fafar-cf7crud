@@ -17,12 +17,11 @@
  * GitHub Plugin URI: https://github.com/suportefafar/fafar-cf7crud
 */
 
-/*
- * This protect the plugin file from direct access
-*/
-if ( ! defined( 'WPINC' ) ) die;
+// If this file is called directly, abort.
+if ( ! defined( 'WPINC' ) ) {
+	die;
+}
 
-if ( ! defined( 'ABSPATH' ) ) exit;
 
 /*
  * Define Constants
@@ -30,28 +29,18 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 define( 'FAFAR_CF7CRUD_DIR', trailingslashit( plugin_dir_path(__FILE__) ) );
 define( 'FAFAR_CF7_FILE_PREFIX', 'fafar-cf7crud-file-' );
 
-
 add_action('wp_enqueue_scripts', 'fafar_cf7crud_callback_for_setting_up_scripts');
 
-
 register_activation_hook( __FILE__, 'fafar_cf7crud_on_activate' );
-
 
 add_action( 'upgrader_process_complete', 'fafar_cf7crud_upgrade_function', 10, 2 );
 
 
-register_deactivation_hook( __FILE__, 'fafar_cf7crud_on_deactivate' );
-
-
 function fafar_cf7crud_callback_for_setting_up_scripts() {
 
-    wp_register_style('fafar-cf7crud', plugins_url( 'css/main.css', __FILE__ ) );
+    wp_enqueue_style( 'fafar-cf7crud', plugin_dir_url( __FILE__ ) . 'public/css/fafar-cf7crud-public.css', array(), false, 'all' );
 
-    wp_enqueue_style( 'fafar-cf7crud' );
-
-    wp_register_script( 'fafar-cf7crud', plugins_url( 'js/main.js', __FILE__ ) );
-
-    wp_enqueue_script( 'fafar-cf7crud' );
+    wp_enqueue_script( 'fafar-cf7crud', plugin_dir_url( __FILE__ ) . 'public/js/fafar-cf7crud-public.js', array( 'jquery' ), false, false );
 
 }
 
@@ -59,19 +48,25 @@ function fafar_cf7crud_callback_for_setting_up_scripts() {
 function fafar_cf7crud_create_table() {
 
     global $wpdb;
-    $cfdb       = apply_filters( 'fafar_cf7crud_database', $wpdb );
-    $table_name = $cfdb->prefix . 'fafar_cf7crud_submissions';
+    /*
+     * If other database should be used.
+     */
+    $fafar_cf7crud_db = apply_filters( 'fafar_cf7crud_set_database', $wpdb );
+    $table_name       = $fafar_cf7crud_db->prefix . 'fafar_cf7crud_submissions';
 
-    if( $cfdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name ) {
+    if( $fafar_cf7crud_db->get_var("SHOW TABLES LIKE '$table_name'") != $table_name ) {
 
-        $charset_collate = $cfdb->get_charset_collate();
+        $charset_collate = $fafar_cf7crud_db->get_charset_collate();
 
         $sql = "CREATE TABLE $table_name (
             id VARCHAR(255) NOT NULL,
-            form_id INT(20) NOT NULL,
-            object_name VARCHAR(50),
             data JSON NOT NULL,
-            is_active INT(1) NOT NULL DEFAULT 1,
+            form_id VARCHAR(255) NOT NULL,
+            object_name VARCHAR(255),
+            is_active VARCHAR(255) NOT NULL DEFAULT '1',
+            owner VARCHAR(255),
+            group_owner VARCHAR(255),
+            permissions VARCHAR(255) NOT NULL DEFAULT '777',
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY  (id)
@@ -98,11 +93,15 @@ function fafar_cf7crud_on_activate( $network_wide ){
 
     global $wpdb;
 
-    $cfdb = apply_filters( 'fafar_cf7crud_database', $wpdb ); // Caso queira mudar o banco de dados
+    /*
+     * If other database should be used.
+     */
+    $fafar_cf7crud_db = apply_filters( 'fafar_cf7crud_set_database', $wpdb );
+    $table_name       = $fafar_cf7crud_db->prefix . 'fafar_cf7crud_submissions';
     
     if ( is_multisite() && $network_wide ) {
         // Get all blogs in the network and activate plugin on each one
-        $blog_ids = $cfdb->get_col( "SELECT blog_id FROM $cfdb->blogs" );
+        $blog_ids = $fafar_cf7crud_db->get_col( "SELECT blog_id FROM $fafar_cf7crud_db->blogs" );
         foreach ( $blog_ids as $blog_id ) {
             switch_to_blog( $blog_id );
             fafar_cf7crud_create_table();
@@ -128,17 +127,6 @@ function fafar_cf7crud_upgrade_function( $upgrader_object, $options ) {
         fclose( $fp );
     }
 
-}
-
-
-function fafar_cf7crud_on_deactivate() {
-
-	// Remove custom capability from all roles
-	global $wp_roles;
-
-	foreach( array_keys( $wp_roles->roles ) as $role ) {
-		$wp_roles->remove_cap( $role, 'fafar_cf7crud_access' );
-	}
 }
 
 
