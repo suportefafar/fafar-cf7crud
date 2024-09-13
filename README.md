@@ -282,7 +282,7 @@ O mesmo vale para o filter hook 'fafar_cf7crud_before_update'.
 É possível usar o action hook 'fafar_cf7crud_after_create' para vericação, alteração, etc.  
 Esse hook passa como único parâmetro, o id da 'submission' cadastrada.
 
-O mesmo vale para o action hook 'fafar_cf7crud_after_create'.
+O mesmo vale para o action hook 'fafar_cf7crud_after_update'.
 
 ## Plugins Não Suportados
 
