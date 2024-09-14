@@ -182,9 +182,14 @@ function fafar_cf7crud_before_send_mail_update( $contact_form, $submission ) {
         if ( $key == 'fafar-cf7crud-submission-id' ) continue;
 
         /**
-         * Ignores 'fafar-cf7crud-object-name' to use it as column on DB
+         * Ignores 'far_db_column_COLUMN_NAME' to use it as column on DB
         */
         if( str_contains( $key, 'far_db_column_' ) ) continue;
+
+        /**
+         * Ignores tags that has 'far_ignore_field_' prefix
+        */
+        if( str_contains( $key, 'far_ignore_tag_' ) ) continue;
 
         /**
          * Ignores field whitch $key do not appears on 

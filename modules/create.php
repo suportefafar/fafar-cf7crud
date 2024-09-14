@@ -184,19 +184,23 @@ function fafar_cf7crud_before_send_mail_create( $contact_form, $submission ) {
     foreach ($posted_data as $key => $value) {
         
         /**
-         * Ignore 'fafar-cf7crud-object-name' to use it as column on DB
+         * Ignores 'far_db_column_COLUMN_NAME' to use it as column on DB
         */
         if( str_contains( $key, 'far_db_column_' ) ) continue;
-        
 
         /**
-         * Ignore field whitch $key do not appears on 
+         * Ignores tags that has 'far_ignore_field_' prefix
+        */
+        if( str_contains( $key, 'far_ignore_tag_' ) ) continue;
+        
+        /**
+         * Ignores field whitch $key do not appears on 
          * original form WPCF7_FormTag Object.
          */
         if ( ! in_array( $key, $allowed_tags ) ) continue;
 
         /**
-         * Ignore field whitch $key do appears on 
+         * Ignores field whitch $key do appears on 
          * $not_allowed_fields array.
          */
         if ( in_array( $key, $not_allowed_fields ) ) continue;

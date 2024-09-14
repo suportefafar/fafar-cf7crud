@@ -56,7 +56,7 @@ Uso comum:
 
 ### Owner, Group Owner e Permissions
 
-Para auxiliar com permissionamento de objetos, o plugin conta as colunas de 'owner', 'group_owner' e 'permissions'.  O plugin **não** utiliza nenhuma dessas colunas nem seus valores em nenhum momento, exeto para inserção de seus valores, seja na criação ou na edição, conforme o usuário desejar.  
+Para auxiliar com permissionamento de objetos, o plugin conta as colunas de 'owner', 'group_owner' e 'permissions'. O plugin **não** utiliza nenhuma dessas colunas nem seus valores em nenhum momento, exeto para inserção de seus valores, seja na criação ou na edição, conforme o usuário desejar.  
 Para estratégia de permissionamento, aconselha-se a do [Linux](https://www.redhat.com/sysadmin/linux-file-permissions-explained).
 
 #### Owner
@@ -69,7 +69,7 @@ Nome ou ID qualquer do grupo dono.
 
 #### Permissions
 
-Algum código ou esquema de permissionamento.  
+Algum código ou esquema de permissionamento.
 
 Exemplo:
 0 - Nenhuma permissão de acesso. Equivalente a -rwx.
@@ -92,6 +92,7 @@ Observação: Se espera uma tabela 'fafar_cf7crud_submissions' com as respectiva
 ## Opções de Formulário
 
 ### Entrada
+
 Trata-se das opções de entrada de dados no formulário.  
 É possível inserir valores da tabela padrão do plugin('fafar-cf7crud-submissions') com algumas 'options' personalizadas.
 Pode-se usar a palavra 'this' para representar o valor da submissão atual.
@@ -154,9 +155,10 @@ Atualmente, não é possível inserir uma chave ou valor com espaços.
 Para o preenchimento de dados, essa propriedade é opcional.
 
 ### Saída
-É possível manipular os valores de todas as colunas da tabela "fafar_cf7crud_submissions" configurando o nome da tag CF7 com a seguinte sintaxe:  
-far_db_column_ + NOME_DA_COLUNA  
-Exemplos:  
+
+É possível manipular os valores de todas as colunas da tabela "fafar*cf7crud_submissions" configurando o nome da tag CF7 com a seguinte sintaxe:  
+far_db_column* + NOME_DA_COLUNA  
+Exemplos:
 
 ```
 [text far_db_column_id "1"]
@@ -168,11 +170,20 @@ Exemplos:
 
 Existe a possibilidade de pular a submissão pelo plugin, se for usado os hooks de verificações finais, para isso.
 Segue:
+
 ```
 [hidden far_prevent_submit "1"]
 ```
 
+### Pular Submissão De Tag's
 
+Além de poder usar o filter hook 'fafar_cf7crud_not_allowed_fields' para pular tag's específicas, é possível realizar o mesmo, ao criar uma tag CF7.  
+Exemplo:
+
+```
+[text far_ignore_tag_carro "Corsa"]
+```
+Dessa forma, essa tag será ignorada pelo FAFAR CF7CRUD.
 
 ## Segurança
 
@@ -198,9 +209,9 @@ $allowed_fields. Array. Nome dos inputs. Um item: 'g-recaptcha-response'.
 
 ### Tratamento Nos Campos
 
-#### fafar_cf7crud_san_lb_
+#### fafar*cf7crud_san_lb*
 
-Adicione o prefixo 'fafar_cf7crud_san_lb_' para que quebras de linha sejam mantidas.
+Adicione o prefixo 'fafar*cf7crud_san_lb*' para que quebras de linha sejam mantidas.
 Utiliza-se a função [sanitize_textarea_field](https://developer.wordpress.org/reference/functions/sanitize_textarea_field/).
 Exemplo:
 
@@ -208,9 +219,9 @@ Exemplo:
 [textarea fafar_cf7crud_san_lb_sobre]
 ```
 
-#### fafar_cf7crud_san_em_
+#### fafar*cf7crud_san_em*
 
-Adicione o prefixo 'fafar_cf7crud_san_em_' para remover todos os caracteres não permitidos em um e_mail.
+Adicione o prefixo 'fafar*cf7crud_san_em*' para remover todos os caracteres não permitidos em um e_mail.
 Utiliza-se a função [sanitize_email](https://developer.wordpress.org/reference/functions/sanitize_email/).
 Exemplo:
 
@@ -218,9 +229,9 @@ Exemplo:
 [email fafar_cf7crud_san_em_email]
 ```
 
-#### fafar_cf7crud_san_fi_
+#### fafar*cf7crud_san_fi*
 
-Adicione o prefixo 'fafar_cf7crud_san_fi_' para substituir todos os espaços em branco por traços.
+Adicione o prefixo 'fafar*cf7crud_san_fi*' para substituir todos os espaços em branco por traços.
 Utiliza-se a função [sanitize_file_name](https://developer.wordpress.org/reference/functions/sanitize_file_name/).
 Exemplo:
 
@@ -228,9 +239,9 @@ Exemplo:
 [text fafar_cf7crud_san_fi_nome_arquivo]
 ```
 
-#### fafar_cf7crud_san_key_
+#### fafar*cf7crud_san_key*
 
-Adicione o prefixo 'fafar_cf7crud_san_key_' para transformar todas as letras em minúsculos. Além disso, permite apenas sublinhados e traços.
+Adicione o prefixo 'fafar*cf7crud_san_key*' para transformar todas as letras em minúsculos. Além disso, permite apenas sublinhados e traços.
 Utiliza-se a função [sanitize_key](https://developer.wordpress.org/reference/functions/sanitize_key/).
 Exemplo:
 
@@ -249,7 +260,7 @@ Cada input[type=file] se torna uma entrada personalizada para melhor controle, n
 ### Prefixo
 
 No banco de dados, o nome do arquivo é guardado dessa forma:  
-'fafar_cf7crud_file_' + NOME DA PROPRIEDADE = NOME DO ARQUIVO.EXTENSÃO  
+'fafar*cf7crud_file*' + NOME DA PROPRIEDADE = NOME DO ARQUIVO.EXTENSÃO  
 Exemplo:  
 'fafar_cf7crud_file_foto':'foto.jpg'
 
@@ -273,7 +284,7 @@ Parâmetro esperado: Array PHP, com todos os campos e seus respectivos valores.
 Retorno esperado: Objeto PHP | null.
 Se o retorno for '**null**', cancela-se a submissão com uma mensagem de erro desconhecido.  
 Para cancelar a submissão com uma mensagem de erro, retorne um array com um atributo '**error_msg**'. Esse valor deve ser uma string.
-Para apenas pular a criação do objeto pelo plugin, retorne um array com um atributo '**far_prevent_submit**' com o valor ***true***.
+Para apenas pular a criação do objeto pelo plugin, retorne um array com um atributo '**far_prevent_submit**' com o valor **_true_**.
 
 O mesmo vale para o filter hook 'fafar_cf7crud_before_update'.
 
