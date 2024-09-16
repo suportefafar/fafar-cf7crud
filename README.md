@@ -154,6 +154,12 @@ Atualmente, não é possível inserir uma chave ou valor com espaços.
 
 Para o preenchimento de dados, essa propriedade é opcional.
 
+#### Text To Time
+É possível trocar o tipo do campo CF7 do tipo 'text' em 'time', apenas inserir a classe 'far-crud-time-field':
+```
+[text horas class:far-crud-time-field]
+```
+
 ### Saída
 
 É possível manipular os valores de todas as colunas da tabela "fafar*cf7crud_submissions" configurando o nome da tag CF7 com a seguinte sintaxe:  
