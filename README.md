@@ -34,25 +34,26 @@ do_action( 'fafar_cf7crud_after_delete', $id );
 
 **fafar_cf7crud_submissions**:
 
-- id VARCHAR(255) NOT NULL | PRIMARY KEY
-- data JSON NOT NULL
-- form_id VARCHAR(255) NOT NULL
-- object_name VARCHAR(255)
-- is_active VARCHAR(255) NOT NULL DEFAULT '1'
-- owner VARCHAR(255)
-- group_owner VARCHAR(255)
-- permissions VARCHAR(255) NOT NULL DEFAULT '777'
-- updated_at TIMESTAMP NOT NULL | DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-- created_at TIMESTAMP NOT NULL | DEFAULT CURRENT_TIMESTAMP
+- id             VARCHAR(255) NOT NULL | PRIMARY KEY
+- data           JSON NOT NULL
+- form_id        VARCHAR(255) NOT NULL
+- object_name    VARCHAR(255)
+- is_active      VARCHAR(255) NOT NULL DEFAULT '1'
+- owner          VARCHAR(255)
+- group_owner    VARCHAR(255)
+- permissions    VARCHAR(255) NOT NULL DEFAULT '777'
+- remote_ip      VARCHAR(255)
+- submission_url VARCHAR(255)
+- updated_at     TIMESTAMP NOT NULL | DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+- created_at     TIMESTAMP NOT NULL | DEFAULT CURRENT_TIMESTAMP
 
 ### Está ativo
 
 Seguindo a filosofia de que deve-se evitar a exclusão, a coluna 'is_active' pode ser útil.  
-Optado utilizar INT por ser um tipo de dados globalmente aceito.  
+    
 Uso comum:  
 '1': Ativado;  
 '0': Desativado;  
-( Ou o que a criatividade mandar )
 
 ### Owner, Group Owner e Permissions
 
@@ -80,6 +81,16 @@ Exemplo:
 5 - Permissão de leitura e execução (rx).
 6 - Permissão de leitura e gravação (rw).
 7 - Permissão de leitura, gravação e execução.
+
+### Remote IP
+
+O plugin gera um hidden input com o IP do cliente.  
+O 'name' do input é 'far_db_column_remote_ip'.
+
+### Submission URL
+
+O plugin gera um hidden input com a URL do formulário de submissão.  
+O 'name' do input é 'far_db_column_submission_url'.
 
 ### Banco de Dados Customizado
 

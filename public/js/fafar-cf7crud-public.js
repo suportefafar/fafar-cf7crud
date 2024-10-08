@@ -8,7 +8,7 @@ window.addEventListener("DOMContentLoaded", () => {
    * Change all CF7 text fields with 'far-crud-time-field' to
    * time fields
    */
-  fafarChangeTextToTimeField();
+  fafarChangeTextToTimeInputType();
 });
 
 function fafarCf7CrudSetButtonListener() {
@@ -56,7 +56,7 @@ function fafarCf7OnChangeCrudInputHandler(event) {
   if (span) span.textContent = fileName ? fileName : "Selecione um arquivo";
 }
 
-function fafarChangeTextToTimeField() {
+function fafarChangeTextToTimeInputType() {
   document.querySelectorAll("input.far-crud-time-field").forEach((el) => {
     el.setAttribute("type", "time");
   });

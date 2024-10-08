@@ -244,38 +244,6 @@ function fafar_cf7crud_before_send_mail_update( $contact_form, $submission ) {
 
     }
 
-    /**
-     *  This filter hook gives the oportunity to make a 
-     *  another check/validation. 
-     */
-    $form_data = apply_filters('fafar_cf7crud_before_update', $form_data);
-
-    if ( ! $form_data ) {
-
-        add_filter('wpcf7_ajax_json_echo', function ($response, $result) {
-            $response['status'] = 'mail_sent_ng';
-            $response['message'] = 'Unknow error. Some function return null from "fafar_cf7crud_before_update" hook.';
-            return $response;
-        }, 10, 2);
-
-        return false;
-    }
-
-    if ( isset( $form_data['error_msg'] ) ) {
-
-        add_filter('wpcf7_ajax_json_echo', function ($response, $result) {
-            $response['status'] = 'mail_sent_ng';
-            $response['message'] = $form_data['error_msg'];
-            return $response;
-        }, 10, 2);
-
-        return false;
-    }
-
-    if ( isset( $form_data['far_prevent_submit'] ) && 
-            $form_data['far_prevent_submit'] === true )
-                return true;
-
     $form_post_id      = $contact_form->id();
     $form_data_as_json = json_encode( $form_data );
 
@@ -300,6 +268,40 @@ function fafar_cf7crud_before_send_mail_update( $contact_form, $submission ) {
         }
 
     }
+
+        /**
+     *  This filter hook gives the oportunity to make a 
+     *  another check/validation. 
+     */
+    $new_data = apply_filters( 'fafar_cf7crud_before_create', $new_data, $contact_form );
+
+    if ( ! $new_data ) {
+
+        add_filter('wpcf7_ajax_json_echo', function ($response, $result) {
+            $response['status'] = 'mail_sent_ng';
+            $response['message'] = 'Unknow error. Some function return null from "fafar_cf7crud_before_update" hook.';
+            return $response;
+        }, 10, 2);
+
+        return false;
+    }
+
+    if ( isset( $new_data['error_msg'] ) ) {
+
+        add_filter('wpcf7_ajax_json_echo', function ($response, $result) {
+            $response['status'] = 'mail_sent_ng';
+            $response['message'] = $new_data['error_msg'];
+            return $response;
+        }, 10, 2);
+
+        return false;
+    }
+
+    if ( isset( $new_data['far_prevent_submit'] ) && 
+         $new_data['far_prevent_submit'] == true )
+        return true;
+
+    if ( isset( $posted_data['far_prevent_submit'] ) ) return true;
 
     $fafar_cf7crud_db->update(
         $table_name,
@@ -434,8 +436,9 @@ function fafar_cf7crud_populate_input_value_dynamically( $tag ) {
 
     }
 
-    //print_r("<br/> // || // <br/>");
-    //print_r($query);
+    // print_r("<br/> // || // <br/>");
+    // print_r($query);
+
 
     $submissions = $fafar_cf7crud_db->get_results( $query );
 
@@ -461,8 +464,8 @@ function fafar_cf7crud_populate_input_value_dynamically( $tag ) {
 
     }
 
-    //print_r( "<br><br>" );
-    //print_r( $tag );
+    // print_r( "<br><br>" );
+    // print_r( $tag );
 
     return $tag;
 
@@ -867,17 +870,23 @@ function fafar_cf7crud_get_custom_input_file( $input_file_str, $file_attrs ) {
  * @return array $submission_decoded  Submission decoded
 */
 function fafar_cf7crud_join_submission_props( $submission ) {
+    
+    if ( ! $submission->data ) {
 
-    
-    foreach($submission as $key => $value) {
-        
-        if ( $key === 'data' )
-            $submission_joined['data'] = json_decode( $value );
-    
-        $submission_joined[$key] = $value;
-            
+        return $submission;
+
     }
-    
-    return $submission_joined;
 
+    $submission_joined = json_decode( $submission->data, true );
+
+    foreach ( $submission as $key => $value ) {
+    
+        if ( $key === 'data' )
+            continue;
+
+        $submission_joined[$key] = $value ?? '--';
+        
+    }
+
+    return $submission_joined;
 }

@@ -59,16 +59,18 @@ function fafar_cf7crud_create_table() {
         $charset_collate = $fafar_cf7crud_db->get_charset_collate();
 
         $sql = "CREATE TABLE $table_name (
-            id VARCHAR(255) NOT NULL,
-            data JSON NOT NULL,
-            form_id VARCHAR(255) NOT NULL,
-            object_name VARCHAR(255),
-            is_active VARCHAR(255) NOT NULL DEFAULT '1',
-            owner VARCHAR(255),
-            group_owner VARCHAR(255),
-            permissions VARCHAR(255) NOT NULL DEFAULT '777',
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            id             VARCHAR(255) NOT NULL,
+            data           JSON NOT NULL,
+            form_id        VARCHAR(255) NOT NULL,
+            object_name    VARCHAR(255),
+            is_active      VARCHAR(255) NOT NULL DEFAULT '1',
+            owner          VARCHAR(255),
+            group_owner    VARCHAR(255),
+            permissions    VARCHAR(255) NOT NULL DEFAULT '777',
+            remote_ip      VARCHAR(255),
+            submission_url VARCHAR(255),
+            updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY  (id)
         ) $charset_collate;";
 
@@ -134,3 +136,8 @@ function fafar_cf7crud_upgrade_function( $upgrader_object, $options ) {
  * Import router module
 */
 require_once FAFAR_CF7CRUD_DIR . 'modules/router.php';
+
+/*
+ * Import general snippets
+*/
+require_once FAFAR_CF7CRUD_DIR . 'modules/general.php';

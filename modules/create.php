@@ -246,38 +246,6 @@ function fafar_cf7crud_before_send_mail_create( $contact_form, $submission ) {
 
     }
 
-    /**
-     *  This filter hook gives the oportunity to make a 
-     *  another check/validation. 
-     */
-    $form_data = apply_filters('fafar_cf7crud_before_create', $form_data);
-
-    if ( ! $form_data ) {
-
-        add_filter('wpcf7_ajax_json_echo', function ($response, $result) {
-            $response['status'] = 'mail_sent_ng';
-            $response['message'] = 'Unknow error. Some function return null from "fafar_cf7crud_before_create" hook.';
-            return $response;
-        }, 10, 2);
-
-        return false;
-    }
-
-    if ( isset( $form_data['error_msg'] ) ) {
-
-        add_filter('wpcf7_ajax_json_echo', function ($response, $result) {
-            $response['status'] = 'mail_sent_ng';
-            $response['message'] = $form_data['error_msg'];
-            return $response;
-        }, 10, 2);
-
-        return false;
-    }
-
-    if ( isset( $form_data['far_prevent_submit'] ) && 
-            $form_data['far_prevent_submit'] === true )
-                return true;
-
     $form_post_id      = $contact_form->id();
     $form_data_as_json = json_encode( $form_data );
 
@@ -302,6 +270,43 @@ function fafar_cf7crud_before_send_mail_create( $contact_form, $submission ) {
         }
 
     }
+
+      /**
+     *  This filter hook gives the oportunity to make a 
+     *  another check/validation. 
+     */
+    
+     $new_data = apply_filters( 'fafar_cf7crud_before_create', $new_data, $contact_form );
+
+     if ( ! $new_data ) {
+ 
+         add_filter('wpcf7_ajax_json_echo', function ($response, $result) {
+             $response['status'] = 'mail_sent_ng';
+             $response['message'] = 'Unknow error. Some function return null from "fafar_cf7crud_before_create" hook.';
+             return $response;
+         }, 10, 2);
+ 
+         return false;
+     }
+ 
+     if ( isset( $new_data['error_msg'] ) ) {
+
+        $error_msg = $new_data['error_msg'];
+ 
+         add_filter('wpcf7_ajax_json_echo', function ($response, $result) use ($error_msg) {
+             $response['status'] = 'mail_sent_ng';
+             $response['message'] = $error_msg;
+             return $response;
+         }, 10, 2);
+ 
+         return false;
+     }
+ 
+    if ( isset( $new_data['far_prevent_submit'] ) && 
+         $new_data['far_prevent_submit'] == true )
+        return true;
+
+    if ( isset( $posted_data['far_prevent_submit'] ) ) return true;
 
     $fafar_cf7crud_db->insert( $table_name, $new_data );
 
