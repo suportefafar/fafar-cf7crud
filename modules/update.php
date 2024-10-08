@@ -436,10 +436,6 @@ function fafar_cf7crud_populate_input_value_dynamically( $tag ) {
 
     }
 
-    // print_r("<br/> // || // <br/>");
-    // print_r($query);
-
-
     $submissions = $fafar_cf7crud_db->get_results( $query );
 
     if ( empty( $submissions ) ) return $tag;
@@ -449,6 +445,7 @@ function fafar_cf7crud_populate_input_value_dynamically( $tag ) {
     $label_prop = explode( "|", $option_display_value )[0];
     $value_prop = explode( "|", $option_display_value )[1];
 
+    $pipes_text = array();
     foreach ( $submissions as $submission ){
 
         $submission_decoded = fafar_cf7crud_join_submission_props( $submission );
@@ -462,7 +459,13 @@ function fafar_cf7crud_populate_input_value_dynamically( $tag ) {
         $value = $submission_decoded[$label_prop];
         array_push( $tag['values'], $value );
 
+        array_push( $tag['labels'], $value );
+
+        array_push( $pipes_text, $raw_value );
+
     }
+
+    $tag['pipes'] = new WPCF7_Pipes( $pipes_text );
 
     // print_r( "<br><br>" );
     // print_r( $tag );
@@ -521,7 +524,6 @@ function fafar_cf7crud_pre_set_input_value( $tag ) {
 
 
     if ( ! isset( $_GET['id'] ) ) return $tag;
-
 
     if ( $tag['basetype'] == 'file' ) {
 
@@ -675,9 +677,17 @@ function fafar_cf7crud_set_tag_default_options( $tag, $values ) {
     $default_arr = array();
     foreach ($values as $value) {
     
-        foreach ($tag['values'] as $tag_key => $tag_value) {
+        foreach ($tag['raw_values'] as $tag_key => $tag_value) {
+            
+            $field_value = $tag_value;
 
-            if ($value == $tag_value) {
+            if ( str_contains( $tag_value , '|' ) ) {
+
+                $field_value = explode( '|', $tag_value )[1];
+
+            }
+
+            if ( $value == $field_value ) {
 
                 array_push( $default_arr, ($tag_key + 1) );
                 break;
