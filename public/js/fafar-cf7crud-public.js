@@ -9,6 +9,18 @@ window.addEventListener("DOMContentLoaded", () => {
    * time fields
    */
   fafarChangeTextToTimeInputType();
+
+  /**
+   * Change all CF7 text fields with 'far-crud-datetime-field' to
+   * datetime fields
+   */
+  fafarChangeTextToDatetimeInputType();
+
+  /**
+   * Change all CF7 text fields with 'far-crud-datetime-local-field' to
+   * datetime-local fields
+   */
+  fafarChangeTextToDatetimeLocalInputType();
 });
 
 function fafarCf7CrudSetButtonListener() {
@@ -61,3 +73,18 @@ function fafarChangeTextToTimeInputType() {
     el.setAttribute("type", "time");
   });
 }
+
+function fafarChangeTextToDatetimeInputType() {
+  document.querySelectorAll("input.far-crud-datetime-field").forEach((el) => {
+    el.setAttribute("type", "datetime");
+  });
+}
+
+function fafarChangeTextToDatetimeLocalInputType() {
+  document
+    .querySelectorAll("input.far-crud-datetime-local-field")
+    .forEach((el) => {
+      el.setAttribute("type", "datetime-local");
+    });
+}
+

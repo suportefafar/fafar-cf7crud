@@ -271,12 +271,14 @@ function fafar_cf7crud_before_send_mail_create( $contact_form, $submission ) {
 
     }
 
-      /**
+    /*
      *  This filter hook gives the oportunity to make a 
-     *  another check/validation. 
+     *  another check/validation.
      */
     
      $new_data = apply_filters( 'fafar_cf7crud_before_create', $new_data, $contact_form );
+     error_log("FAFAR CF7 ----------------------------------------->");
+     error_log(print_r($new_data, true));
 
      if ( ! $new_data ) {
  

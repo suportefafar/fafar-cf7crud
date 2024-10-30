@@ -133,11 +133,11 @@ function fafar_cf7crud_upgrade_function( $upgrader_object, $options ) {
 
 
 /*
- * Import router module
-*/
-require_once FAFAR_CF7CRUD_DIR . 'modules/router.php';
-
-/*
  * Import general snippets
 */
 require_once FAFAR_CF7CRUD_DIR . 'modules/general.php';
+
+/*
+ * Import router module
+*/
+require_once FAFAR_CF7CRUD_DIR . 'modules/router.php';

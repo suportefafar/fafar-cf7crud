@@ -171,6 +171,34 @@ Para o preenchimento de dados, essa propriedade é opcional.
 [text horas class:far-crud-time-field]
 ```
 
+#### Text To Datetime
+É possível trocar o tipo do campo CF7 do tipo 'text' em 'datetime', apenas inserir a classe 'far-crud-datetime-field':
+```
+[text dia_hora class:far-crud-datetime-field]
+```
+
+#### Text To Datetime Local
+É possível trocar o tipo do campo CF7 do tipo 'text' em 'datetime-local', apenas inserir a classe 'far-crud-datetime-local-field':
+```
+[text dia_hora class:far-crud-datetime-local-field]
+```
+
+#### Text Transform
+É possível utilizar 4 valores da propriedade css 'text-transform' em campo CF7, apenas inserir a classe 'far-crud-transform-VALOR'.
+Os 4 valores suportados são:
+```
+[text nome class:far-crud-transform-capitalize]
+```
+```
+[text nome class:far-crud-transform-uppercase]
+```
+```
+[text nome class:far-crud-transform-lowercase]
+```
+```
+[text nome class:far-crud-transform-none]
+```
+
 ### Saída
 
 É possível manipular os valores de todas as colunas da tabela "fafar*cf7crud_submissions" configurando o nome da tag CF7 com a seguinte sintaxe:  
