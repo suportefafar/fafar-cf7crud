@@ -16,4 +16,6 @@ function fafar_cf7crud_check_for_update_permission( $new_data ) {
 
     }
 
+    return $new_data;
+
 }
