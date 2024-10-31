@@ -268,11 +268,11 @@ function fafar_cf7crud_before_send_mail_update( $contact_form, $submission ) {
 
     }
 
-        /**
+    /*
      *  This filter hook gives the oportunity to make a 
      *  another check/validation. 
      */
-    $new_data = apply_filters( 'fafar_cf7crud_before_create', $new_data, $contact_form );
+    $new_data = apply_filters( 'fafar_cf7crud_before_update', $new_data, $contact_form );
 
     if ( ! $new_data ) {
 
@@ -287,9 +287,11 @@ function fafar_cf7crud_before_send_mail_update( $contact_form, $submission ) {
 
     if ( isset( $new_data['error_msg'] ) ) {
 
-        add_filter('wpcf7_ajax_json_echo', function ($response, $result) {
+        $error_msg = $new_data['error_msg'];
+ 
+        add_filter('wpcf7_ajax_json_echo', function ($response, $result) use ($error_msg) {
             $response['status'] = 'mail_sent_ng';
-            $response['message'] = $new_data['error_msg'];
+            $response['message'] = $error_msg;
             return $response;
         }, 10, 2);
 

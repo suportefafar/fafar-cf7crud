@@ -141,3 +141,8 @@ require_once FAFAR_CF7CRUD_DIR . 'modules/general.php';
  * Import router module
 */
 require_once FAFAR_CF7CRUD_DIR . 'modules/router.php';
+
+/*
+ * Import permissions module
+*/
+require_once FAFAR_CF7CRUD_DIR . 'modules/permissions.php';

@@ -59,7 +59,7 @@ function fafar_cf7crud_get_ip_address(){
  * @param  CF7 Tag Object $tag  CF7 tag object from contact-form-7/includes/form-tags-manager.php
  * @return CF7 Tag Object $tag  CF7 tag object from contact-form-7/includes/form-tags-manager.php
 */
-function fafar_cf7crud_populate_input_value_dynamically( $tag ) { 
+function fafar_cf7crud_populate_input_value_dynamically( $tag ) {
 
     global $wpdb;
     /*
@@ -78,7 +78,8 @@ function fafar_cf7crud_populate_input_value_dynamically( $tag ) {
      * Column Filter Part
     */
     $option_column_filter_value = fafar_cf7crud_get_tag_option_value( $tag, 'far_crud_column_filter' ); 
-    $query_filter_column_part = '';
+    $query_filter_column_part   = '';
+    $submission_decoded         = fafar_cf7crud_get_current_submission();
     if ( $option_column_filter_value !== false ) {
 
         // Expected: far_crud_column_filter:COLUMN_1|VALUE_1:COLUMN_2|VALUE_2
@@ -93,8 +94,6 @@ function fafar_cf7crud_populate_input_value_dynamically( $tag ) {
             $value = explode( "|", $filter )[1];
 
             if( $value === 'this' ) {
-
-                $submission_decoded = fafar_cf7crud_get_current_submission( true );
 
                 if( $submission_decoded === false || ! isset( $submission_decoded[$key] ) ) continue;
 
@@ -132,8 +131,6 @@ function fafar_cf7crud_populate_input_value_dynamically( $tag ) {
             $value = explode( "|", $filter )[1];
 
             if( $value === 'this' ) {
-
-                $submission_decoded = fafar_cf7crud_get_current_submission( true );
 
                 if( $submission_decoded === false || ! isset( $submission_decoded[$key] ) ) continue;
                 
@@ -261,7 +258,14 @@ function fafar_cf7crud_get_tag_option_value( $tag, $option, $return_option_index
  * @since 1.0.0
  * @return mixed|array $submission Return from $wpdb->get_results
 */
-function fafar_cf7crud_get_current_submission( $decode = false ) {
+function fafar_cf7crud_get_current_submission() {
+
+    if( ! isset( $_GET['id'] ) ) return false;
+
+    return fafar_cf7crud_get_submission_by_id( $_GET['id'] );
+}
+
+function fafar_cf7crud_get_submission_by_id( $id, $decode = true ) {
 
     global $wpdb;
     /*
@@ -270,19 +274,15 @@ function fafar_cf7crud_get_current_submission( $decode = false ) {
     $fafar_cf7crud_db = apply_filters( 'fafar_cf7crud_set_database', $wpdb );
     $table_name       = $fafar_cf7crud_db->prefix . 'fafar_cf7crud_submissions';
 
-    if( ! isset( $_GET['id'] ) ) return false;
-    
-    $query = "SELECT * FROM `" . 
-                $table_name . 
-                "` WHERE `id` = '" . 
-                $_GET['id'] . 
-                "'";  
+    $query = "SELECT * FROM `" . $table_name . 
+        "` WHERE `id` = '" . fafar_cf7crud_san( $id ) . "'";  
 
     $submission = $fafar_cf7crud_db->get_results( $query );
 
     return ( $decode ) ? 
         fafar_cf7crud_join_submission_props( $submission[0] ) : 
-        $submission_decoded[0];
+        $submission[0];
+
 }
 
 /*
@@ -313,4 +313,90 @@ function fafar_cf7crud_join_submission_props( $submission ) {
     }
 
     return $submission_joined;
+}
+
+
+function fafar_cf7crud_check_read_permission( $submission, $user_id = null ) {
+    
+    $READ_DIGIT_VALUES = array( 4, 5, 6, 7 );
+
+    return fafar_cf7crud_check_permissions( $submission, $READ_DIGIT_VALUES, $user_id );
+
+}
+
+function fafar_cf7crud_check_write_permission( $submission, $user_id = null ) {
+
+    $WRITE_DIGIT_VALUES = array( 1, 3, 5, 7 );
+
+    return fafar_cf7crud_check_permissions( $submission, $WRITE_DIGIT_VALUES, $user_id );
+
+}
+
+function fafar_cf7crud_check_exec_permission( $submission, $user_id = null ) {
+
+    $EXEC_DIGIT_VALUES = array( 1, 3, 5, 7 );
+
+    return fafar_cf7crud_check_permissions( $submission, $EXEC_DIGIT_VALUES, $user_id );
+
+}
+
+function fafar_cf7crud_check_permissions( $submission, $permission_digit_values, $user_id = null ) {
+
+    $owner                              = (string) ( $submission['owner'] ?? 0 );
+    $group_owner                        = (string) ( $submission['group_owner'] ?? 0 );
+    $permissions                        = (string) ( $submission['permissions'] ?? '777' );
+
+    $current_user_id                    = (string) ( $user_id ?? get_current_user_id() );
+    $user_meta                          = get_userdata( $current_user_id );
+    $user_roles                         = $user_meta->roles; // array( [0] => 'techs', ... )
+
+    $OWNER_PERMISSION_DIGIT_INDEX       = 0;
+    $OWNER_GROUP_PERMISSION_DIGIT_INDEX = 1;
+    $OTHERS_PERMISSION_DIGIT_INDEX      = 2;
+
+    /**
+     * If the current user is the 'administrator', 
+     * it gets instant permission.
+    */
+    if( in_array( 'administrator', $user_roles ) ) return true;
+
+    // Permissions not set
+    if ( ! $permissions ) return true;
+
+    // Do not has restriction
+    if ( $permissions === '777' ) return true;
+    
+    // Current user is the owner
+    if ( $owner === $current_user_id ) {
+
+        $permission_value = (int) str_split( $permissions )[$OWNER_PERMISSION_DIGIT_INDEX];
+        return in_array( $permission_value, $permission_digit_values, true );
+
+    }
+
+    /**
+     * Group permissions
+     * If user is on $group_owner.
+     * $user_roles. Array. array( [0] => 'techs', ... )
+     */
+    if ( in_array( strtolower( $group_owner ), $user_roles ) )
+    {
+
+        $permission_value = (int) str_split( $permissions )[$OWNER_GROUP_PERMISSION_DIGIT_INDEX];
+        return in_array( $permission_value, $permission_digit_values, true );
+    
+    }
+
+    // Others permissions
+    $permission_value = (int) str_split( $permissions )[$OTHERS_PERMISSION_DIGIT_INDEX];
+    return in_array( $permission_value, $permission_digit_values, true );
+
+}
+
+function fafar_cf7crud_san( $v ) {
+
+    $v = ( is_array( $v ) ? $v[0] : $v );
+
+    return sanitize_text_field( wp_unslash( $v ) );
+
 }
