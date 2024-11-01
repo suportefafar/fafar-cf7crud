@@ -6,6 +6,8 @@ add_filter( 'wpcf7_form_hidden_fields', 'fafar_cf7crud_add_hidden_ip_field' );
 
 add_filter( 'wpcf7_form_tag', 'fafar_cf7crud_populate_input_value_dynamically' );
 
+add_filter( 'wpcf7_form_tag', 'fafar_cf7crud_populate_input_value_dynamically_by_shortcode' );
+
 function fafar_cf7crud_add_hidden_url_field( $fields ) {
     
     $fields['far_db_column_submission_url'] = fafar_cf7crud_get_url();
@@ -203,6 +205,97 @@ function fafar_cf7crud_populate_input_value_dynamically( $tag ) {
 
     // print_r( "<br><br>" );
     // print_r( $tag );
+
+    return $tag;
+
+}
+
+function fafar_cf7crud_populate_input_value_dynamically_by_shortcode( $tag ) {
+
+    if ( is_admin() ) return $tag;
+
+    if( empty( $tag['options'] ) ) return $tag;
+
+    // Array
+    //     (
+    //         [type] => checkbox
+    //         [basetype] => checkbox
+    //         [raw_name] => checkbox-317
+    //         [name] => checkbox-317
+    //         [options] => Array
+    //             (
+    //                 [0] => use_label_element
+    //                 [1] => far-crud-shortcode:intranet_fafar_get_users_as_select_options
+    //             )
+
+    //         [raw_values] => Array
+    //             (
+    //             )
+
+    //         [values] => Array
+    //             (
+    //             )
+
+    //         [pipes] => WPCF7_Pipes Object
+    //             (
+    //                 [pipes:WPCF7_Pipes:private] => Array
+    //                     (
+    //                     )
+
+    //             )
+
+    //         [labels] => Array
+    //             (
+    //             )
+
+    //         [attr] => 
+    //         [content] => 
+    //     )
+
+
+    $contains_shortcode = array_filter( $tag['options'], function ( $value ) {
+        return strpos( $value, 'far_crud_shortcode:' ) !== false;
+    });
+    
+    if ( sizeof( $contains_shortcode ) != 1 ) return $tag;
+
+    $shortcode_parts = explode( ":", reset( $contains_shortcode ) );
+
+    if ( sizeof( $shortcode_parts ) != 2 ) return $tag;
+
+    $shortcode_name = $shortcode_parts[1];
+
+    if ( ! $shortcode_name ) return $tag;
+
+    $json = do_shortcode( '[' . $shortcode_name . ']' );
+
+    if ( ! is_string( $json ) ) return $tag;
+
+    $arr = json_decode( $json, true );
+
+
+    $select_one_text = '';
+    array_push( $tag['values'], $select_one_text );
+    array_push( $tag['raw_values'], $select_one_text );
+    array_push( $tag['labels'], $select_one_text );
+    array_push( $tag['options'], 'first_as_label' );
+
+    $pipes_text = array();
+    foreach ( $arr as $k => $v ) {
+        
+        $raw_value = $v . "|" . $k;
+        array_push( $tag['raw_values'], $raw_value );
+
+        $value = $v;
+        array_push( $tag['values'], $value );
+
+        array_push( $tag['labels'], $value );
+
+        array_push( $pipes_text, $raw_value );
+
+    }
+
+    $tag['pipes'] = new WPCF7_Pipes( $pipes_text );
 
     return $tag;
 

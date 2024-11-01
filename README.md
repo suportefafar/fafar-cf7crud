@@ -165,6 +165,32 @@ Atualmente, não é possível inserir uma chave ou valor com espaços.
 
 Para o preenchimento de dados, essa propriedade é opcional.
 
+### far_crud_shortcode
+É possível utilizar a propriedade 'far_crud_shortcode' para usar um shortcode como fonte de dados para qualquer campo selecionável.  
+O shortcode deve retornar uma string JSON, com chaves e valores, obrigatóriamente, sendo a chave a 'value' da 'option' e valor sendo a label:
+```
+[select profissional far_crud_shortcode:obter_profissionais_ativos]
+```
+  
+```json
+[
+    {
+        "1234hjk4" : "Jeferson"
+    }, 
+    {
+        "fjk234dskl" : "Linda"
+    }
+    ...
+]
+```
+  
+Sendo:
+```html
+    <option value="1234hjk4">Jeferson</option>
+    <option value="fjk234dskl">Linda</option>
+```
+Obs.: Apesar do exemplo acima ter sido com o campo 'select', essa propriedade pode ser usada em qualquer campo selecionável.  
+  
 #### Text To Time
 É possível trocar o tipo do campo CF7 do tipo 'text' em 'time', apenas inserir a classe 'far-crud-time-field':
 ```
@@ -201,8 +227,8 @@ Os 4 valores suportados são:
 
 ### Saída
 
-É possível manipular os valores de todas as colunas da tabela "fafar*cf7crud_submissions" configurando o nome da tag CF7 com a seguinte sintaxe:  
-far_db_column* + NOME_DA_COLUNA  
+É possível manipular os valores de todas as colunas da tabela "fafar_cf7crud_submissions" configurando o nome da tag CF7 com a seguinte sintaxe:  
+far_db_column_ + NOME_DA_COLUNA  
 Exemplos:
 
 ```
@@ -254,9 +280,9 @@ $allowed_fields. Array. Nome dos inputs. Um item: 'g-recaptcha-response'.
 
 ### Tratamento Nos Campos
 
-#### fafar*cf7crud_san_lb*
+#### fafar_cf7crud_san_lb_
 
-Adicione o prefixo 'fafar*cf7crud_san_lb*' para que quebras de linha sejam mantidas.
+Adicione o prefixo 'fafar_cf7crud_san_lb_' para que quebras de linha sejam mantidas.
 Utiliza-se a função [sanitize_textarea_field](https://developer.wordpress.org/reference/functions/sanitize_textarea_field/).
 Exemplo:
 
@@ -264,9 +290,9 @@ Exemplo:
 [textarea fafar_cf7crud_san_lb_sobre]
 ```
 
-#### fafar*cf7crud_san_em*
+#### fafar_cf7crud_san_em_
 
-Adicione o prefixo 'fafar*cf7crud_san_em*' para remover todos os caracteres não permitidos em um e_mail.
+Adicione o prefixo 'fafar_cf7crud_san_em_' para remover todos os caracteres não permitidos em um e_mail.
 Utiliza-se a função [sanitize_email](https://developer.wordpress.org/reference/functions/sanitize_email/).
 Exemplo:
 
@@ -274,9 +300,9 @@ Exemplo:
 [email fafar_cf7crud_san_em_email]
 ```
 
-#### fafar*cf7crud_san_fi*
+#### fafar_cf7crud_san_fi_
 
-Adicione o prefixo 'fafar*cf7crud_san_fi*' para substituir todos os espaços em branco por traços.
+Adicione o prefixo 'fafar_cf7crud_san_fi_' para substituir todos os espaços em branco por traços.
 Utiliza-se a função [sanitize_file_name](https://developer.wordpress.org/reference/functions/sanitize_file_name/).
 Exemplo:
 
@@ -284,9 +310,9 @@ Exemplo:
 [text fafar_cf7crud_san_fi_nome_arquivo]
 ```
 
-#### fafar*cf7crud_san_key*
+#### fafar_cf7crud_san_key_
 
-Adicione o prefixo 'fafar*cf7crud_san_key*' para transformar todas as letras em minúsculos. Além disso, permite apenas sublinhados e traços.
+Adicione o prefixo 'fafar_cf7crud_san_key_' para transformar todas as letras em minúsculos. Além disso, permite apenas sublinhados e traços.
 Utiliza-se a função [sanitize_key](https://developer.wordpress.org/reference/functions/sanitize_key/).
 Exemplo:
 
@@ -305,7 +331,7 @@ Cada input[type=file] se torna uma entrada personalizada para melhor controle, n
 ### Prefixo
 
 No banco de dados, o nome do arquivo é guardado dessa forma:  
-'fafar*cf7crud_file*' + NOME DA PROPRIEDADE = NOME DO ARQUIVO.EXTENSÃO  
+'fafar_cf7crud_file_' + NOME DA PROPRIEDADE = NOME DO ARQUIVO.EXTENSÃO  
 Exemplo:  
 'fafar_cf7crud_file_foto':'foto.jpg'
 
