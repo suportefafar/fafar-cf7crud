@@ -6,7 +6,7 @@ add_filter( 'wpcf7_form_hidden_fields', 'fafar_cf7crud_add_hidden_ip_field' );
 
 add_filter( 'wpcf7_form_tag', 'fafar_cf7crud_populate_input_value_dynamically' );
 
-add_filter( 'wpcf7_form_tag', 'fafar_cf7crud_populate_input_value_dynamically_by_shortcode' );
+add_filter( 'wpcf7_form_tag', 'fafar_cf7crud_populate_input_by_shortcut' );
 
 function fafar_cf7crud_add_hidden_url_field( $fields ) {
     
@@ -175,12 +175,6 @@ function fafar_cf7crud_populate_input_value_dynamically( $tag ) {
     $label_prop = explode( "|", $option_display_value )[0];
     $value_prop = explode( "|", $option_display_value )[1];
 
-    $select_one_text = '';
-    array_push( $tag['values'], $select_one_text );
-    array_push( $tag['raw_values'], $select_one_text );
-    array_push( $tag['labels'], $select_one_text );
-    array_push( $tag['options'], 'first_as_label' );
-
     $pipes_text = array();
     foreach ( $submissions as $submission ) {
 
@@ -210,11 +204,10 @@ function fafar_cf7crud_populate_input_value_dynamically( $tag ) {
 
 }
 
-function fafar_cf7crud_populate_input_value_dynamically_by_shortcode( $tag ) {
+function fafar_cf7crud_populate_input_by_shortcut( $tag ) {
 
-    if ( is_admin() ) return $tag;
-
-    if( empty( $tag['options'] ) ) return $tag;
+    //     print_r( "<br><br>" );
+    // print_r( $tag );
 
     // Array
     //     (
@@ -252,6 +245,9 @@ function fafar_cf7crud_populate_input_value_dynamically_by_shortcode( $tag ) {
     //         [content] => 
     //     )
 
+    if ( is_admin() ) return $tag;
+
+    if( empty( $tag['options'] ) ) return $tag;
 
     $contains_shortcode = array_filter( $tag['options'], function ( $value ) {
         return strpos( $value, 'far_crud_shortcode:' ) !== false;
@@ -271,14 +267,21 @@ function fafar_cf7crud_populate_input_value_dynamically_by_shortcode( $tag ) {
 
     if ( ! is_string( $json ) ) return $tag;
 
+    /*
+     * Checks if we are NOT dealing with selectable field
+     */
+    $selectable_types = array( 'checkbox', 'select', 'radio' );
+    if ( ! in_array( $tag['basetype'], $selectable_types ) ) {
+
+        $str_value = $json;
+
+        $tag['values'] = (array) $str_value;
+
+        return $tag;
+
+    }
+
     $arr = json_decode( $json, true );
-
-
-    $select_one_text = '';
-    array_push( $tag['values'], $select_one_text );
-    array_push( $tag['raw_values'], $select_one_text );
-    array_push( $tag['labels'], $select_one_text );
-    array_push( $tag['options'], 'first_as_label' );
 
     $pipes_text = array();
     foreach ( $arr as $k => $v ) {
@@ -296,6 +299,14 @@ function fafar_cf7crud_populate_input_value_dynamically_by_shortcode( $tag ) {
     }
 
     $tag['pipes'] = new WPCF7_Pipes( $pipes_text );
+
+    return $tag;
+
+}
+
+function fafar_cf7crud_populate_input_not_selectable( $tag ) { 
+
+    $tag['values'] = (array) $input_value;
 
     return $tag;
 

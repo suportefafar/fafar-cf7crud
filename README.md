@@ -166,7 +166,7 @@ Atualmente, não é possível inserir uma chave ou valor com espaços.
 Para o preenchimento de dados, essa propriedade é opcional.
 
 ### far_crud_shortcode
-É possível utilizar a propriedade 'far_crud_shortcode' para usar um shortcode como fonte de dados para qualquer campo selecionável.  
+É possível utilizar a propriedade 'far_crud_shortcode' para usar um shortcode como fonte de dados para campo de qualquer tipo.  
 O shortcode deve retornar uma string JSON, com chaves e valores, obrigatóriamente, sendo a chave a 'value' da 'option' e valor sendo a label:
 ```
 [select profissional far_crud_shortcode:obter_profissionais_ativos]
@@ -189,7 +189,7 @@ Sendo:
     <option value="1234hjk4">Jeferson</option>
     <option value="fjk234dskl">Linda</option>
 ```
-Obs.: Apesar do exemplo acima ter sido com o campo 'select', essa propriedade pode ser usada em qualquer campo selecionável.  
+Obs.: Apesar do exemplo acima ter sido com o campo 'select', essa propriedade pode ser usada em campo de qualquer tipo.  
   
 #### Text To Time
 É possível trocar o tipo do campo CF7 do tipo 'text' em 'time', apenas inserir a classe 'far-crud-time-field':
