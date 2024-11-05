@@ -231,11 +231,11 @@ Os 4 valores suportados são:
 O plugin reconhece automáticamente se um formulário é de edição ou criação, verificando a existência do parâmetro 'id' na URL.  
 Porém, é possível forçar um ou outro com a criação de um input com nome 'fafar_cf7crud_create_submission' para forçar criação:
 ```
-[hidden fafar_cf7crud_create_submission]
+[hidden fafar_cf7crud_create_submission "1"]
 ```
 ou 'fafar_cf7crud_update_submission' para forçar atualização:
 ```
-fafar_cf7crud_update_submission
+[hidden fafar_cf7crud_update_submission "1"]
 ```
 
 #### Manipular Colunas Comuns
