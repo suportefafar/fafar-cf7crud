@@ -3,7 +3,6 @@
 add_filter( 'wpcf7_form_tag', 'fafar_cf7crud_pre_set_input_value' );
 
 add_filter( 'wpcf7_form_elements', 'fafar_cf7crud_create_custom_file_type_input' );
-add_filter( 'wpcf7_form_elements', 'fafar_cf7crud_add_submission_id_hidden' );
 
 /*
  * Called on 'wpcf7_before_send_mail' filter hook
@@ -32,7 +31,7 @@ function fafar_cf7crud_before_send_mail_update( $contact_form, $submission ) {
     }
 
     // Update routine diff
-    if ( ! $submission->get_posted_data( "fafar-cf7crud-submission-id" )) {
+    if ( ! $submission->get_posted_data( "fafar_cf7crud_submission_id" ) ) {
         
         $contact_form->skip_mail = true; // Skip sending the mail
         $submission->set_status( 'aborted' );
@@ -62,7 +61,7 @@ function fafar_cf7crud_before_send_mail_update( $contact_form, $submission ) {
     /*
      * Get submission ID form field previously set by 'fafar_cf7crud_add_submission_id_hidden()'
      */
-    $unique_hash = $submission->get_posted_data( "fafar-cf7crud-submission-id" );
+    $unique_hash = $submission->get_posted_data( "fafar_cf7crud_submission_id" );
 
     /*
     *  CF7 uploads the files to it's own folder.
@@ -174,11 +173,11 @@ function fafar_cf7crud_before_send_mail_update( $contact_form, $submission ) {
     foreach ($posted_data as $key => $value) {
         
         /**
-         * Ignores 'fafar-cf7crud-submission-id' because is just used to retrieve 
+         * Ignores 'fafar_cf7crud_submission_id' because is just used to retrieve 
          * the submission ID.
          * Update routine diff
         */
-        if ( $key == 'fafar-cf7crud-submission-id' ) continue;
+        if ( $key == 'fafar_cf7crud_submission_id' ) continue;
 
         /**
          * Ignores 'far_db_column_COLUMN_NAME' to use it as column on DB
@@ -369,28 +368,6 @@ function fafar_cf7crud_pre_set_input_value( $tag ) {
     }
 
     return $tag;
-}
-
-/*
- * Called by 'wpcf7_form_elements' filter hook.
- * It just adds a hidden input with the id of the submission, 
- * on the end of the HTML form.
- *
- * @since 1.0.0
- * @param  string $content  HTML form string
- * @return string $content  HTML form string
-*/
-function fafar_cf7crud_add_submission_id_hidden($content) {
-
-    if ( is_admin() ) 
-        return $content;
-
-    // Adding Hidden Submission ID Field
-    if ( isset( $_GET['id'] ) )
-        $content .= "<input class='wpcf7-form-control wpcf7-hidden' type='hidden' name='fafar-cf7crud-submission-id' value='" . $_GET['id'] . "' />";
-
-	return $content;
-
 }
 
 /*

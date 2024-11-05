@@ -227,6 +227,18 @@ Os 4 valores suportados são:
 
 ### Saída
 
+#### Forçar Create / Update
+O plugin reconhece automáticamente se um formulário é de edição ou criação, verificando a existência do parâmetro 'id' na URL.  
+Porém, é possível forçar um ou outro com a criação de um input com nome 'fafar_cf7crud_create_submission' para forçar criação:
+```
+[hidden fafar_cf7crud_create_submission]
+```
+ou 'fafar_cf7crud_update_submission' para forçar atualização:
+```
+fafar_cf7crud_update_submission
+```
+
+#### Manipular Colunas Comuns
 É possível manipular os valores de todas as colunas da tabela "fafar_cf7crud_submissions" configurando o nome da tag CF7 com a seguinte sintaxe:  
 far_db_column_ + NOME_DA_COLUNA  
 Exemplos:

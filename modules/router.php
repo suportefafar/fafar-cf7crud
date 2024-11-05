@@ -4,6 +4,7 @@
 /*
  * Import modules
 */
+require_once trailingslashit( plugin_dir_path(__FILE__) ) . 'general.php';
 require_once trailingslashit( plugin_dir_path(__FILE__) ) . 'create.php';
 require_once trailingslashit( plugin_dir_path(__FILE__) ) . 'read.php';
 require_once trailingslashit( plugin_dir_path(__FILE__) ) . 'update.php';
@@ -30,7 +31,12 @@ add_action( 'wpcf7_before_send_mail', 'fafar_cf7crud_before_send_mail_handler', 
 */
 function fafar_cf7crud_before_send_mail_handler( $contact_form, $abort, $submission ) {
 
-    if( $submission->get_posted_data( 'fafar-cf7crud-submission-id' ) !== null ) {
+    if( $submission->get_posted_data( 'fafar_cf7crud_create_submission' ) !== null ) {
+
+        $abort = ! fafar_cf7crud_before_send_mail_create( $contact_form, $submission );
+        
+    } else if( $submission->get_posted_data( 'fafar_cf7crud_update_submission' ) !== null || 
+                $submission->get_posted_data( 'fafar_cf7crud_submission_id' ) !== null ) {
 
         $abort = ! fafar_cf7crud_before_send_mail_update( $contact_form, $submission );
         

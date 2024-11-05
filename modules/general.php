@@ -1,5 +1,7 @@
 <?php
 
+add_filter( 'wpcf7_form_hidden_fields', 'fafar_cf7crud_add_submission_id_hidden', 9 );
+
 add_filter( 'wpcf7_form_hidden_fields', 'fafar_cf7crud_add_hidden_url_field' );
 
 add_filter( 'wpcf7_form_hidden_fields', 'fafar_cf7crud_add_hidden_ip_field' );
@@ -7,6 +9,43 @@ add_filter( 'wpcf7_form_hidden_fields', 'fafar_cf7crud_add_hidden_ip_field' );
 add_filter( 'wpcf7_form_tag', 'fafar_cf7crud_populate_input_value_dynamically' );
 
 add_filter( 'wpcf7_form_tag', 'fafar_cf7crud_populate_input_by_shortcut' );
+
+// add_filter( 'wpcf7_form_elements', 'fafar_cf7crud_add_submission_id_hidden' );
+// function fafar_cf7crud_add_submission_id_hidden($content) {
+
+//     if ( is_admin() ) 
+//         return $content;
+
+//     // Adding Hidden Submission ID Field
+//     if ( isset( $_GET['id'] ) )
+//         $content .= "<input class='wpcf7-form-control wpcf7-hidden' type='hidden' name='fafar-cf7crud-submission-id' value='" . $_GET['id'] . "' />";
+
+// 	return $content;
+
+// }
+
+/*
+ * Called by 'wpcf7_form_elements' filter hook.
+ * It just adds a hidden input with the id of the submission, 
+ * on the end of the HTML form.
+ *
+ * @since 1.0.0
+ * @param  string $content  HTML form string
+ * @return string $content  HTML form string
+ */
+function fafar_cf7crud_add_submission_id_hidden( $content ) {
+
+    if ( is_admin() ) 
+        return $content;
+
+    if ( ! isset( $_GET['id'] ) )
+        return $content;
+
+    $fields['fafar_cf7crud_submission_id'] = fafar_cf7crud_san( $_GET['id'] ); 
+  
+    return $fields;
+
+}
 
 function fafar_cf7crud_add_hidden_url_field( $fields ) {
     

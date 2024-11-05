@@ -4,23 +4,28 @@ window.addEventListener("DOMContentLoaded", () => {
   // Set listener to stock input when file is selected
   fafarCf7CrudSetStockFileInputListener();
 
-  /**
+  /*
    * Change all CF7 text fields with 'far-crud-time-field' to
    * time fields
    */
   fafarChangeTextToTimeInputType();
 
-  /**
+  /*
    * Change all CF7 text fields with 'far-crud-datetime-field' to
    * datetime fields
    */
   fafarChangeTextToDatetimeInputType();
 
-  /**
+  /*
    * Change all CF7 text fields with 'far-crud-datetime-local-field' to
    * datetime-local fields
    */
   fafarChangeTextToDatetimeLocalInputType();
+
+  /*
+   *
+   */
+  fafarToUpperCase();
 });
 
 function fafarCf7CrudSetButtonListener() {
@@ -88,3 +93,30 @@ function fafarChangeTextToDatetimeLocalInputType() {
     });
 }
 
+function fafarToUpperCase() {
+  document.querySelectorAll(".far-crud-transform-uppercase").forEach((el) =>
+    el.addEventListener("input", function () {
+      this.value = this.value.toUpperCase();
+    })
+  );
+}
+
+function fafarToLowerCase() {
+  document.querySelectorAll(".far-crud-transform-lowercase").forEach((el) =>
+    el.addEventListener("input", function () {
+      this.value = this.value.toUpperCase();
+    })
+  );
+}
+
+function fafarToLowerCase() {
+  document.querySelectorAll(".far-crud-transform-lowercase").forEach((el) =>
+    el.addEventListener("input", function () {
+      this.value = fafarCapitalizeFirstLetter(this.value.toUpperCase());
+    })
+  );
+}
+
+function fafarCapitalizeFirstLetter(val) {
+  return String(val).charAt(0).toUpperCase() + String(val).slice(1);
+}
