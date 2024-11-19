@@ -23,9 +23,25 @@ window.addEventListener("DOMContentLoaded", () => {
   fafarChangeTextToDatetimeLocalInputType();
 
   /*
-   *
+   * Uppercase value on input's that has 'far-crud-transform-uppercase'
    */
   fafarToUpperCase();
+
+  /*
+   * Lowercase value on input's that has 'far-crud-transform-lowercase'
+   */
+  fafarToLowerCase();
+
+  /*
+   * Capitalize value on input's that has 'far-crud-transform-capitalize'
+   */
+  fafarStrCapitalize();
+
+  /*
+   * Stripes every char on a value that is not a number
+   * inputed on a field with 'far-crud-just-number' class
+   */
+  fafarJustNumber();
 });
 
 function fafarCf7CrudSetButtonListener() {
@@ -109,8 +125,8 @@ function fafarToLowerCase() {
   );
 }
 
-function fafarToLowerCase() {
-  document.querySelectorAll(".far-crud-transform-lowercase").forEach((el) =>
+function fafarStrCapitalize() {
+  document.querySelectorAll(".far-crud-transform-capitalize").forEach((el) =>
     el.addEventListener("input", function () {
       this.value = fafarCapitalizeFirstLetter(this.value.toUpperCase());
     })
@@ -119,4 +135,15 @@ function fafarToLowerCase() {
 
 function fafarCapitalizeFirstLetter(val) {
   return String(val).charAt(0).toUpperCase() + String(val).slice(1);
+}
+
+function fafarJustNumber() {
+  document.querySelectorAll(".far-crud-just-number").forEach((el) =>
+    el.addEventListener("input", function (e) {
+      e.target.value = e.target.value
+        .split()
+        .map((c) => c.replace(/[^0-9.,]/g, ""))
+        .join();
+    })
+  );
 }
