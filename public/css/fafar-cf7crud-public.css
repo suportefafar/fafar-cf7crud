@@ -1,4 +1,4 @@
-input[type="file"] {
+form.wpcf7-form input[type="file"] {
   display: none !important;
 }
 
@@ -51,4 +51,3 @@ input[type="file"] {
 .far-crud-transform-none {
   text-transform: none;
 }
-
