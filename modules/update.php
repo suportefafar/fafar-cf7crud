@@ -61,7 +61,7 @@ function fafar_cf7crud_before_send_mail_update( $contact_form, $submission ) {
     /*
      * Get submission ID form field previously set by 'fafar_cf7crud_add_submission_id_hidden()'
      */
-    $unique_hash = $submission->get_posted_data( "fafar_cf7crud_submission_id" );
+    $submission_id = $submission->get_posted_data( "fafar_cf7crud_submission_id" );
 
     /*
     *  CF7 uploads the files to it's own folder.
@@ -82,7 +82,7 @@ function fafar_cf7crud_before_send_mail_update( $contact_form, $submission ) {
         $file = is_array( $file ) ? reset( $file ) : $file;
         if( ! empty($file) ) {
 
-            $filename = $unique_hash . '-' . $file_key . '-' . basename( $file );
+            $filename = $submission_id . '-' . $file_key . '-' . basename( $file );
 
             copy( 
                 $file, // From
@@ -246,7 +246,7 @@ function fafar_cf7crud_before_send_mail_update( $contact_form, $submission ) {
     $form_data_as_json = json_encode( $form_data );
 
     $new_data = array(
-        'id'          => $unique_hash,
+        'id'          => $submission_id,
         'data'        => $form_data_as_json,
         'form_id'     => $form_post_id
     );
@@ -271,7 +271,7 @@ function fafar_cf7crud_before_send_mail_update( $contact_form, $submission ) {
      *  This filter hook gives the oportunity to make a 
      *  another check/validation. 
      */
-    $new_data = apply_filters( 'fafar_cf7crud_before_update', $new_data, $contact_form );
+    $new_data = apply_filters( 'fafar_cf7crud_before_update', $new_data, $submission_id, $contact_form );
 
     if ( ! $new_data ) {
 
@@ -307,11 +307,11 @@ function fafar_cf7crud_before_send_mail_update( $contact_form, $submission ) {
         $table_name,
         $new_data,
         array(
-            'id' => $unique_hash
+            'id' => $submission_id
         )
     );
 
-    do_action( 'fafar_cf7crud_after_update', $unique_hash );
+    do_action( 'fafar_cf7crud_after_update', $submission_id );
 
     return true;
 }
@@ -561,7 +561,7 @@ function set_tag_option_value( $tag, $option, $value ) {
 
     if ( ! $option_index ) return $tag;
 
-    $tag['options'][$index] = $value;
+    $tag['options'][$option_index] = $value;
 
     return $tag;
 
