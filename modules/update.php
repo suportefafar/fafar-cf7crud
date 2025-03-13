@@ -1,419 +1,198 @@
 <?php
 
-add_filter( 'wpcf7_form_tag', 'fafar_cf7crud_pre_set_input_value' );
+// If this file is called directly, abort.
+if (!defined('WPINC')) {
+    die;
+}
 
-add_filter( 'wpcf7_form_elements', 'fafar_cf7crud_create_custom_file_type_input' );
+add_filter('wpcf7_form_tag', 'fafar_cf7crud_pre_set_input_value');
+add_filter('wpcf7_form_elements', 'fafar_cf7crud_create_custom_file_type_input');
 
-/*
- * Called on 'wpcf7_before_send_mail' filter hook
- * Function to update a submission
- * Runs when at 'wpcf7_before_send_mail' action hook
+/**
+ * Handles form submission updates for CF7 CRUD operations.
  *
  * @since 1.0.0
- * @param WPCF7_ContactForm Object $contact_form     Input form data.
- * @return null
-*/
+ * @param WPCF7_ContactForm $contact_form Form object.
+ * @param WPCF7_Submission  $submission  Submission object.
+ * @return bool Operation status.
+ */
 function fafar_cf7crud_before_send_mail_update( $contact_form, $submission ) {
-
     global $wpdb;
 
-    // TODO: update return msg method
-    // Submission not found
-    if ( ! $submission ) {
-    
-        $contact_form->skip_mail = true; // Skip sending the mail
-        $submission->set_status( 'aborted' );
-        $submission->set_response( $contact_form->filter_message(
-            __( 'Submission not found!', 'fafar-cf7crud' ) )
+    // Validate submission object
+    if (!$submission) {
+        return fafar_cf7crud_abort_submission(
+            $contact_form,
+            __('Objeto não encontrado!', 'fafar-cf7crud')
         );
-        return false;
-    
     }
 
-    // Update routine diff
-    if ( ! $submission->get_posted_data( "fafar_cf7crud_submission_id" ) ) {
-        
-        $contact_form->skip_mail = true; // Skip sending the mail
-        $submission->set_status( 'aborted' );
-        $submission->set_response( $contact_form->filter_message(
-            __( 'Submission ID not found!', 'fafar-cf7crud' ) 
-            )
+    // Check for submission ID
+    $submission_id = $submission->get_posted_data( 'fafar_cf7crud_submission_id' );
+    if ( empty( $submission_id ) ) {
+        return fafar_cf7crud_abort_submission(
+            $contact_form,
+            __('ID de objeto não encontrado!', 'fafar-cf7crud')
         );
-        return false;
-
     }
 
-   /*
-     * If other database should be used.
-     */
-    $fafar_cf7crud_db = apply_filters( 'fafar_cf7crud_set_database', $wpdb );
-    $table_name       = $fafar_cf7crud_db->prefix . 'fafar_cf7crud_submissions';
-    
-    /*
-     * Set the upload folder
-     */
-    $upload_dir                    = wp_upload_dir();
-    $fafar_cf7crud_upload_dir_path = apply_filters( 
-        'fafar_cf7crud_set_upload_dir_path', 
-        $upload_dir[ 'basedir' ] . '/fafar-cf7crud-uploads/'
-     );
-
-    /*
-     * Get submission ID form field previously set by 'fafar_cf7crud_add_submission_id_hidden()'
-     */
-    $submission_id = $submission->get_posted_data( "fafar_cf7crud_submission_id" );
-
-    /*
-    *  CF7 uploads the files to it's own folder.
-    *  Here we copy these files from CF7 upload folder to our upload folder.
-    *    Array
-    *     (
-    *         [bill-doc] => Array
-    *         (
-    *               [0] => /var/www/html/wp-content/uploads/wpcf7_uploads/2084569911/Captura-de-tela-de-2024-08-30-19-31-14.png
-    *         )
-    *    
-    *     )
-    */
-    $files_to_database = array();
-    $cf7_uploaded_files = $submission->uploaded_files();
-    foreach ($cf7_uploaded_files as $file_key => $file) {
-
-        $file = is_array( $file ) ? reset( $file ) : $file;
-        if( ! empty($file) ) {
-
-            $filename = $submission_id . '-' . $file_key . '-' . basename( $file );
-
-            copy( 
-                $file, // From
-                $fafar_cf7crud_upload_dir_path . sanitize_file_name( $filename ) // To
-            );
-
-            $files_to_database[$file_key] = sanitize_file_name( $filename );
-
-        }
-
-    }
- 
-    /**
-     * Tags filter
-     * $contact_form->scan_form_tags( $cond ) : Array of WPCF7_FormTag Object
-     *   $cond: array( 
-     *            'type' => array( 'text*' ... )       Ex.: text, text*, select, select*, etc.
-     *            'basetype' => array( 'text' ... )    Ex.: text, select, etc.
-     *            'name' => array( 'car-model' ... )   Name input prop.
-     *            'feature' => array( 'required' ... ) Ex.: 'required', 'placeholder', 'readonly', 'accepts_files', 'multiselect', etc. 
-     *   )
-     * 
-     * 
-     * $allowed_tags : array( 
-     *   [0] => WPCF7_FormTag Object
-     *    (
-     *        [type] => text*
-     *        [basetype] => text
-     *        [raw_name] => your-name
-     *        [name] => your-name
-     *        [options] => Array
-     *            (
-     *                    [0] => autocomplete:name
-     *            )
-     *
-     *        [raw_values] => Array
-     *            (
-     *
-     *            )
-     *
-     *        [values] => Array
-     *            (
-     *
-     *            )
-     *
-     *        [pipes] => WPCF7_Pipes Object
-     *            (
-     *                    [pipes:WPCF7_Pipes:private] => Array
-     *                    (
-     *
-     *                    )
-     *
-     *            )
-     *
-     *        [labels] => Array
-     *            (
-     *
-     *            )
-     *
-     *        [attr] => 
-     *        [content] => 
-     *    )
-    */
-    $allowed_tags = array();
-    $tags_names   = array();
-    $tags  = $contact_form->scan_form_tags();
-
-    foreach( $tags as $tag ){
-        if( ! empty($tag->name) ) $tags_names[] = $tag->name;
-    }
-    
-    $allowed_tags       = apply_filters( 'fafar_cf7crud_allowed_tags', $tags_names );
-    
-    $not_allowed_fields = apply_filters( 'fafar_cf7crud_not_allowed_fields', array( 'g-recaptcha-response' ) );
-
-    /**
-     * $submission->get_posted_data() : 
-     * Array (
-     *       [your-name] => asdfasdfasdf
-     *       [your-subject] => asdfasdfasdf
-     *       [your-message] => asdfasdfasdf
-     *       [fafar-cf7crud-input-file-hidden-bill-doc] => Captura de tela de 2024-08-28 16-39-26.png
-     *       [bill-doc] => adf1eaf01842149c785a109ee87430eb
-     *   )
-     */
-    $posted_data = $submission->get_posted_data();
-    $form_data = array();
-    foreach ($posted_data as $key => $value) {
-        
-        /**
-         * Ignores 'fafar_cf7crud_submission_id' because is just used to retrieve 
-         * the submission ID.
-         * Update routine diff
-        */
-        if ( $key == 'fafar_cf7crud_submission_id' ) continue;
-
-        /**
-         * Ignores 'far_db_column_COLUMN_NAME' to use it as column on DB
-        */
-        if( str_contains( $key, 'far_db_column_' ) ) continue;
-
-        /**
-         * Ignores tags that has 'far_ignore_field_' prefix
-        */
-        if( str_contains( $key, 'far_ignore_tag_' ) ) continue;
-
-        /**
-         * Ignores field whitch $key do not appears on 
-         * original form WPCF7_FormTag Object.
-         */
-        if ( ! in_array( $key, $allowed_tags ) ) continue;
-
-        /**
-         * Ignores field whitch $key do appears on 
-         * $not_allowed_fields array.
-         */
-        if ( in_array( $key, $not_allowed_fields ) ) continue;
-
-        /**
-         * FILES HANDLER
-         * If $files_to_database[$key] is set, 
-         * stores on $form_data.
-         */
-        if ( isset( $files_to_database[$key] ) ) {
-
-            $file_prefix = 'fafar_cf7crud_file_';
-
-            $form_data[sanitize_key( $file_prefix . $key )] = $files_to_database[$key];
-
-            continue;
-
-        }
-
-        /**
-         * Custom sanitize by it's custom prefix,
-         * if set.
-         */
-        $tmpValue = "";
-        if ( ! is_array($value) ) {
-
-            $tmpValue = fafar_cf7crud_sanitize( $value, $key );
-    
-        } else {
-
-            $tmpValue = array();
-            foreach( $value as $index => $item ) {
-                array_push($tmpValue, fafar_cf7crud_sanitize( $item, $key ));
-            }           
-
-        }
-
-        /**
-         * Sanitize $key data then add at $form_data.
-         */
-
-        $form_data[sanitize_key( $key )] = $tmpValue;
-
-    }
-
-    $form_post_id      = $contact_form->id();
-    $form_data_as_json = json_encode( $form_data );
-
-    $new_data = array(
-        'id'          => $submission_id,
-        'data'        => $form_data_as_json,
-        'form_id'     => $form_post_id
+    // Apply filters for database and upload directory
+    $db = apply_filters( 'fafar_cf7crud_set_database', $wpdb );
+    $table_name = $db->prefix . 'fafar_cf7crud_submissions';
+    $upload_dir = apply_filters(
+        'fafar_cf7crud_set_upload_dir_path',
+        wp_upload_dir()['basedir'] . '/fafar-cf7crud-uploads/'
     );
 
-    $columns = $fafar_cf7crud_db->get_results("SHOW COLUMNS FROM $table_name");
-
-    foreach ($columns as $column) {
-
-        $column_name = $column->Field;
-
-        if ( isset( $posted_data['far_db_column_' . $column_name] ) &&
-                $posted_data['far_db_column_' . $column_name] ) {
-            $new_data[$column_name] = 
-                fafar_cf7crud_sanitize( 
-                    $posted_data['far_db_column_' . $column_name] 
-                );
-        }
-
-    }
-
-    /*
-     *  This filter hook gives the oportunity to make a 
-     *  another check/validation. 
-     */
-    $new_data = apply_filters( 'fafar_cf7crud_before_update', $new_data, $submission_id, $contact_form );
-
-    if ( ! $new_data ) {
-
-        add_filter('wpcf7_ajax_json_echo', function ($response, $result) {
-            $response['status'] = 'mail_sent_ng';
-            $response['message'] = 'Unknow error. Some function return null from "fafar_cf7crud_before_update" hook.';
-            return $response;
-        }, 10, 2);
-
-        return false;
-    }
-
-    if ( isset( $new_data['error_msg'] ) ) {
-
-        $error_msg = $new_data['error_msg'];
- 
-        add_filter('wpcf7_ajax_json_echo', function ($response, $result) use ($error_msg) {
-            $response['status'] = 'mail_sent_ng';
-            $response['message'] = $error_msg;
-            return $response;
-        }, 10, 2);
-
-        return false;
-    }
-
-    if ( isset( $new_data['far_prevent_submit'] ) && 
-         $new_data['far_prevent_submit'] == true )
-        return true;
-
-    if ( isset( $posted_data['far_prevent_submit'] ) ) return true;
-
-    $fafar_cf7crud_db->update(
-        $table_name,
-        $new_data,
-        array(
-            'id' => $submission_id
-        )
+    // Process uploaded files
+    $file_mappings = fafar_cf7crud_process_uploaded_files(
+        $submission->uploaded_files(),
+        $submission_id,
+        $upload_dir
     );
 
-    do_action( 'fafar_cf7crud_after_update', $submission_id );
+    // Prepare form data
+    $form_data = fafar_cf7crud_prepare_form_data(
+        $submission->get_posted_data(),
+        $contact_form->scan_form_tags(),
+        $file_mappings
+    );
 
+    // Build the record for update
+    $record = [
+        'id'      => $submission_id,
+        'data'    => json_encode($form_data),
+        'form_id' => $contact_form->id(),
+    ];
+
+    // Map form fields to database columns
+    $record = fafar_cf7crud_insert_common_columns( $record, $submission->get_posted_data(), $db, $table_name );
+
+    // Apply filters for additional validation
+    $record = apply_filters( 'fafar_cf7crud_before_update', $record, $submission_id, $contact_form );
+
+    if ( empty( $record ) ) {
+        return fafar_cf7crud_abort_submission(
+            $contact_form,
+            __('Falha na validação de dados', 'fafar-cf7crud'),
+        );
+    }
+    
+    if ( isset( $record['error_msg'] ) ) {
+        return fafar_cf7crud_abort_submission(
+            $contact_form,
+            __($record['error_msg'], 'fafar-cf7crud'),
+        );
+    }
+
+    if (
+        ! empty( $record['far_prevent_submit'] ) || 
+        isset( $posted_data['far_prevent_submit'] )
+    ) return true;
+
+    // Update the database
+    if ($db->update( $table_name, $record, ['id' => $submission_id] ) === false) {
+        return fafar_cf7crud_abort_submission(
+            $contact_form,
+            __('Falha na atualização', 'fafar-cf7crud')
+        );
+    }
+
+    do_action('fafar_cf7crud_after_update', $submission_id);
     return true;
 }
 
-/*
- * Called on 'wpcf7_form_tag' filter hook.
- * This set a value to the inputs 'value' prop.
- * Ex: <input value="VALUE_TO_BE_SET" />
- * 
- * Works on 'checkbox', 'radio' and 'select' input tags, too.
+
+/**
+ * Sets input values for CF7 form tags.
  *
- * @since 1.0.0
- * @param  CF7 Tag Object $tag  CF7 tag object from contact-form-7/includes/form-tags-manager.php
- * @return CF7 Tag Object $tag  CF7 tag object from contact-form-7/includes/form-tags-manager.php
-*/
+ * @param array $tag CF7 form tag.
+ * @return array Modified CF7 form tag.
+ */
 function fafar_cf7crud_pre_set_input_value( $tag ) {
-    
-    if ( is_admin() ) return $tag;
-
-
-    if ( ! isset( $_GET['id'] ) ) return $tag;
-
-    if ( $tag['basetype'] == 'file' ) {
-
-        $input_value = fafar_cf7crud_get_submission_data_prop( 'fafar_cf7crud_file_' . $tag['name'] );
-
-        $tag['raw_values'] = $input_value;
+    if ( is_admin() || !isset( $_GET['id'] ) ) {
         return $tag;
-
     }
 
+    $value = fafar_cf7crud_get_submission_data_prop( $tag['name'] );
+    if ( empty( $value ) ) {
+        return $tag;
+    }
 
-    $input_value = fafar_cf7crud_get_submission_data_prop( $tag['name'] );  
-    if ( empty( $input_value ) ) return $tag;
-
-    if ( $tag['basetype'] == 'radio' ) {
-
-        $tag = fafar_cf7crud_set_tag_default_options( $tag, $input_value );
-
-    } else if ( $tag['basetype'] == 'select' ) {
-
-        $tag = fafar_cf7crud_set_tag_default_options( $tag, $input_value );
-
-    } else if ( $tag['basetype'] == 'checkbox' ) {
-
-        $tag = fafar_cf7crud_set_tag_default_options( $tag, $input_value );
-
+    if ( in_array( $tag['basetype'], ['radio', 'select', 'checkbox'] ) ) {
+        $tag = fafar_cf7crud_set_tag_default_options( $tag, $value );
     } else {
-
-        $input_value = fafar_cf7crud_get_submission_data_prop( $tag['name'] );
-
-        $tag['values'] = (array) $input_value;
-
+        $tag['values'] = (array) $value;
     }
 
     return $tag;
 }
 
-/*
- * Called by 'wpcf7_form_elements' filter hook.
- * It changes the stock file input for a custom.
- * This is necessary cause when 'value' file input property 
- * is set by other way then manually by the user, the name of 
- * the file does not appears. This is a default HTML tag behavior.
+/**
+ * Replaces CF7 file inputs with custom file inputs.
  *
- * @since 1.0.0
- * @param  string $content  HTML form string
- * @return string $content  HTML form string
-*/
+ * @param string $content Form content.
+ * @return string Modified form content.
+ */
 function fafar_cf7crud_create_custom_file_type_input( $content ) {
-
-    if ( is_admin() ) 
+    if ( is_admin() ) {
         return $content;
-
-    $file_attrs = array();
-
-    if ( isset( $_GET['id'] ) )
-        $file_attrs = fafar_cf7crud_get_file_attrs();
-
-    // Creating a pattern
-    $startPattern = '/<input[^>]*';
-    $type = 'type="file"';
-    $endPattern = '[^>]*\/?>/';
-        
-    $pattern = $startPattern . $type . $endPattern;
-        
-    // Perform the regex match
-    if ( preg_match_all( $pattern, $content, $input_file_matches ) ) {
-        // If has at least one
-        foreach( $input_file_matches[0] as $input_file_match ) {
-
-            // Add's a custom file input, after the original file input(hidden by css)
-            $content = str_replace( $input_file_match, fafar_cf7crud_get_custom_input_file( $input_file_match, $file_attrs ), $content );
-                
-        }
-        
     }
 
-	return $content;
+    $file_attrs = isset( $_GET['id'] ) ? fafar_cf7crud_get_file_attrs() : [];
+
+    preg_match_all( '/<input[^>]*type="file"[^>]*\/?>/', $content, $matches );
+    foreach ( $matches[0] as $input ) {
+        $content = str_replace(
+            $input,
+            fafar_cf7crud_get_custom_input_file( $input, $file_attrs ),
+            $content
+        );
+    }
+
+    return $content;
 }
 
-function fafar_cf7crud_get_file_attrs() {
+/**
+ * Generates a custom file input HTML.
+ *
+ * @param string $input      Original file input HTML.
+ * @param array  $file_attrs File attributes.
+ * @return string Custom file input HTML.
+ */
+function fafar_cf7crud_get_custom_input_file( $input, $file_attrs ) {
+    preg_match( '/name="([\S]+)"/', $input, $matches );
+    $name = $matches[1];
+    $value = $file_attrs['fafar_cf7crud_file_' . $name] ?? '';
+
+    $custom_input = sprintf(
+        '<div class="fafar-cf7crud-input-document-container">
+            <button type="button" class="fafar-cf7crud-input-document-button" data-file-input-button="%s">
+                <span class="dashicons dashicons-upload"></span> Arquivo
+            </button>
+            <span class="fafar-cf7crud-input-document-name" data-file-input-label="%s">%s</span>
+        </div>
+        %s
+        <input class="wpcf7-form-control wpcf7-hidden" name="fafar_cf7crud_input_file_hidden_%s" value="%s" type="hidden" />',
+        esc_attr( $name ),
+        esc_attr( $name ),
+        esc_html( $value ?: 'Selecione um arquivo' ),
+        $input,
+        esc_attr( $name ),
+        esc_attr( $value )
+    );
+
+    return $custom_input;
+}
+
+/**
+ * Function to get value from a data.JSON_PROP
+ *
+ * @since 1.0.0
+ * @param string $json_prop     A prop of data submission json.
+ * @return array
+*/
+function fafar_cf7crud_get_submission_data_prop( $json_prop ) {
 
     global $wpdb;
 
@@ -423,32 +202,33 @@ function fafar_cf7crud_get_file_attrs() {
     $fafar_cf7crud_db = apply_filters( 'fafar_cf7crud_set_database', $wpdb );
     $table_name       = $fafar_cf7crud_db->prefix . 'fafar_cf7crud_submissions';
 
-    $submissions = $fafar_cf7crud_db->get_results(
-        "SELECT * FROM `" . $table_name . "` WHERE `id` = '" . $_GET['id'] . "'" 
-    );
+    $query = "SELECT * FROM `" . 
+        $table_name .
+        "` WHERE `id` = '" . $_GET['id'] . "'";
 
-    $file_attrs = array();
+    $submissions = $fafar_cf7crud_db->get_results( $query );
 
-	if ( !$submissions[0] )
-        return $file_attrs;
+	if ( !$submissions[0] ) 
+        return [];
 	
-	$form_data = json_decode( $submissions[0]->data );
+	$data_json = json_decode( $submissions[0]->data );
 
-	foreach ( $form_data as $chave => $data ) {
+	foreach ( $data_json as $key => $value ) {
 
-        if ( strpos( $chave, 'fafar_cf7crud_file_' ) !== false ) {
-
-            $file_attrs[ $chave ] = $data;
+        if ( $key ===  $json_prop ) {
+            // TODO: escape text
+            if ( ! empty( $value ) ) 
+                if ( is_array( $value ) ) return $value;
+                else return (array) $value;
 
         }
 
     }
 
-    return $file_attrs;
-    
+    return [];
 }
 
-/*
+/**
  * This function set the 'default: x' 'options' on cf7 tag.
  * Ex: [radio 'default: 1' 'Yes' 'No']
  * If exists, updates;
@@ -501,14 +281,8 @@ function fafar_cf7crud_set_tag_default_options( $tag, $values ) {
 
 }
 
-/*
- * Function to get value from a data.JSON_PROP
- *
- * @since 1.0.0
- * @param string $json_prop     A prop of data submission json.
- * @return array
-*/
-function fafar_cf7crud_get_submission_data_prop( $json_prop ) {
+
+function fafar_cf7crud_get_file_attrs() {
 
     global $wpdb;
 
@@ -518,100 +292,27 @@ function fafar_cf7crud_get_submission_data_prop( $json_prop ) {
     $fafar_cf7crud_db = apply_filters( 'fafar_cf7crud_set_database', $wpdb );
     $table_name       = $fafar_cf7crud_db->prefix . 'fafar_cf7crud_submissions';
 
-    $query = "SELECT * FROM `" . 
-        $table_name .
-        "` WHERE `id` = '" . $_GET['id'] . "'";
+    $submissions = $fafar_cf7crud_db->get_results(
+        "SELECT * FROM `" . $table_name . "` WHERE `id` = '" . $_GET['id'] . "'" 
+    );
 
-    $submissions = $fafar_cf7crud_db->get_results( $query );
+    $file_attrs = array();
 
-	if ( !$submissions[0] ) 
-        return [];
+	if ( !$submissions[0] )
+        return $file_attrs;
 	
-	$data_json = json_decode( $submissions[0]->data );
+	$form_data = json_decode( $submissions[0]->data );
 
-	foreach ( $data_json as $key => $value ) {
+	foreach ( $form_data as $chave => $data ) {
 
-        if ( $key ===  $json_prop ) {
-            // TODO: escape text
-            if ( ! empty( $value ) ) 
-                if ( is_array( $value ) ) return $value;
-                else return (array) $value;
+        if ( strpos( $chave, 'fafar_cf7crud_file_' ) !== false ) {
+
+            $file_attrs[ $chave ] = $data;
 
         }
 
     }
 
-    return [];
-}
-
-/*
- * Function sets a value to certain option of a tag.
- * 
- * $tag['options'] = array( [0] => 'default: 1', ... )
- * 
- * @since 1.0.0
- * @param  CF7 Tag Object $tag     CF7 tag object.
- * @param  string $option     The name of the option.
- * @param  mixed $value     Value to set to option.
- * @return CF7 Tag Object $tag     CF7 tag object.
-*/
-function set_tag_option_value( $tag, $option, $value ) {
-
-    $option_index = fafar_cf7crud_get_tag_option_value( $tag, $option, true );
-
-    if ( ! $option_index ) return $tag;
-
-    $tag['options'][$option_index] = $value;
-
-    return $tag;
-
-}
-
-function fafar_cf7crud_get_input_file_attr_value( $key_attr, $file_attrs ) {
-
-    foreach ( $file_attrs as $key => $value) {
-
-        if ( $key_attr == $key ) return $value;
-
-    }
-
-    return '';
-}
-
-function fafar_cf7crud_get_custom_input_file( $input_file_str, $file_attrs ) {
-
-    // Get name attr from stock file input
-    preg_match( '/name="[\S]+"/', $input_file_str, $matches );
-    $name_attr = str_replace( 'name="' , '', $matches[0] );
-    $name_attr = str_replace( '"' , '', $name_attr );
-
-    // Set attr as database saved
-    $key_attr_with_file_db_sufix = 'fafar_cf7crud_file_' . $name_attr;
-
-    // Get current attr value: String | ""
-    $value_attr = fafar_cf7crud_get_input_file_attr_value( $key_attr_with_file_db_sufix, $file_attrs );
-
-    // Building fafar cf7crud file input with custom label and data attr
-    $custom_input_file  = "<div class='fafar-cf7crud-input-document-container'>";
-    $custom_input_file .= "<button type='button' class='fafar-cf7crud-input-document-button' data-file-input-button='" . $name_attr . "'>";
-    $custom_input_file .= "<span class='dashicons dashicons-upload'></span>";
-    $custom_input_file .= "Arquivo";
-    $custom_input_file .= "</button>";
-    $custom_input_file .= "<span class='fafar-cf7crud-input-document-name' data-file-input-label='" . $name_attr . "'>";
-    $custom_input_file .= ( $value_attr ?? "Selecione um arquivo" );
-    $custom_input_file .= "</span>";
-    $custom_input_file .= "</div>";
-
-    // Setting value attr of stock file input
-    $input_file_str = preg_replace( '/\/?>/', ' value="' . $value_attr . '" />', $input_file_str );
-
-    // Setting custom class
-    $input_file_str = preg_replace( '/class=\"/', ' class="fafar-cf7crud-stock-file-input ', $input_file_str );
-
-    // Building a hidden input to store the file names
-    $input_hidden_to_store_file_path = 
-        "<input class='wpcf7-form-control wpcf7-hidden' name='fafar_cf7crud_input_file_hidden_" . $name_attr . "' value='" . ( $value_attr ?? "" ) . "' type='hidden' />";
-
-
-    return $input_file_str . $custom_input_file . $input_hidden_to_store_file_path;
+    return $file_attrs;
+    
 }

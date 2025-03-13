@@ -1,10 +1,14 @@
 <?php
 
+// If this file is called directly, abort.
+if ( ! defined( 'WPINC' ) ) {
+	die;
+}
+
 /*
  * Checking write permissions
  */
 add_filter( 'fafar_cf7crud_before_update', 'fafar_cf7crud_check_for_update_permission', 1, 1 );
-
 
 function fafar_cf7crud_check_for_update_permission( $new_data ) {
 

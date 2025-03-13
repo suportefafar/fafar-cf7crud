@@ -3,7 +3,7 @@
  * Plugin Name:       FAFAR Contact Form 7 CRUD
  * Plugin URI:        https://github.com/suportefafar/fafar-cf7crud
  * Description:       Salve e edite submissões do Contact Form 7. Nunca perca dados importantes. O plugin FAFAR Contact Form 7 CRUD é um complemento para o plugin Contact Form 7.
- * Version:           1.0.0
+ * Version:           1.1.0
  * Requires at least: 5.2
  * Requires PHP:      7.2
  * Author:            Suporte FAFAR UFMG
@@ -15,7 +15,7 @@
  * Domain Path:       /languages
  * Requires Plugins:  WPCF7
  * GitHub Plugin URI: https://github.com/suportefafar/fafar-cf7crud
-*/
+ */
 
 // If this file is called directly, abort.
 if ( ! defined( 'WPINC' ) ) {

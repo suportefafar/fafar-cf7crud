@@ -14,51 +14,42 @@ _Não implementada até o presente momento._
 
 ### Editando
 
-Este plugin lê o formulário CF7, procurando por uma entrada oculta com name='id'.
-Se existir, "FAFAR CF7CRUD" sabe que é um formulário de atualização.
+Este plugin lê o formulário CF7, procurando por uma campo com name='fafar_cf7crud_submission_id'.
+Se existir, o plugin saberá que se trata de um formulário de atualização, e então preencherá os campos com seus respectivos _name_
 
 ### Deletando
 
 _Não implementada até o presente momento._
 
-Disponibiliza um botão por meio de um shortcode para _excluir_ a _submissão_.  
-O shortode recebe um parâmetro: 'id' da submissão.  
-A submissão **não** é de fato excluída, mas apenas muda o valor da coluna 'is_active' para 0(zero).
-A exclusão efetiva pode ser feita por meio do action hook 'fafar_cf7crud_after_delete', que passa o 'id' da submissão por parâmetro:
-
-```
-do_action( 'fafar_cf7crud_after_delete', $id );
-```
-
 ## Banco de Dados
 
 **fafar_cf7crud_submissions**:
 
-- id             VARCHAR(255) NOT NULL | PRIMARY KEY
-- data           JSON NOT NULL
-- form_id        VARCHAR(255) NOT NULL
-- object_name    VARCHAR(255)
-- is_active      VARCHAR(255) NOT NULL DEFAULT '1'
-- owner          VARCHAR(255)
-- group_owner    VARCHAR(255)
-- permissions    VARCHAR(255) NOT NULL DEFAULT '777'
-- remote_ip      VARCHAR(255)
+- id VARCHAR(255) NOT NULL | PRIMARY KEY
+- data JSON NOT NULL
+- form_id VARCHAR(255) NOT NULL
+- object_name VARCHAR(255)
+- is_active VARCHAR(255) NOT NULL DEFAULT '1'
+- owner VARCHAR(255)
+- group_owner VARCHAR(255)
+- permissions VARCHAR(255) NOT NULL DEFAULT '777'
+- remote_ip VARCHAR(255)
 - submission_url VARCHAR(255)
-- updated_at     TIMESTAMP NOT NULL | DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-- created_at     TIMESTAMP NOT NULL | DEFAULT CURRENT_TIMESTAMP
+- updated_at TIMESTAMP NOT NULL | DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+- created_at TIMESTAMP NOT NULL | DEFAULT CURRENT_TIMESTAMP
 
-### Está ativo
+### Está ativo(is_active)
 
-Seguindo a filosofia de que deve-se evitar a exclusão, a coluna 'is_active' pode ser útil.  
-    
+Seguindo a filosofia de que deve-se evitar a exclusão, a coluna 'is_active' pode ser útil.
+
 Uso comum:  
 '1': Ativado;  
-'0': Desativado;  
+'0': Desativado;
 
 ### Owner, Group Owner e Permissions
 
-Para auxiliar com permissionamento de objetos, o plugin conta as colunas de 'owner', 'group_owner' e 'permissions'. O plugin **não** utiliza nenhuma dessas colunas nem seus valores em nenhum momento, exeto para inserção de seus valores, seja na criação ou na edição, conforme o usuário desejar.  
-Para estratégia de permissionamento, aconselha-se a do [Linux](https://www.redhat.com/sysadmin/linux-file-permissions-explained).
+Para auxiliar com permissionamento de objetos, o plugin conta as colunas de 'owner', 'group_owner' e 'permissions'. O plugin **não** utiliza nenhuma dessas colunas nem seus valores em nenhum momento.  
+Para estratégia de permissionamento, aconselha-se a do [Linux](https://www.redhat.com/sysadmin/linux-file-permissions-explained) da qual as colunas são baseadas.
 
 #### Owner
 
@@ -72,7 +63,7 @@ Nome ou ID qualquer do grupo dono.
 
 Algum código ou esquema de permissionamento.
 
-Exemplo:
+Definição:
 0 - Nenhuma permissão de acesso. Equivalente a -rwx.
 1 - Permissão de execução (x).
 2 - Permissão de gravação (w).
@@ -82,19 +73,21 @@ Exemplo:
 6 - Permissão de leitura e gravação (rw).
 7 - Permissão de leitura, gravação e execução.
 
+Exemplo:
+'777': Todos podem ler, gravar e executar.  
+'740': Dono pode ler, gravar e executar; grupo do dono pode ler; outros não têm acesso.
+
 ### Remote IP
 
-O plugin gera um hidden input com o IP do cliente.  
-O 'name' do input é 'far_db_column_remote_ip'.
+O plugin gera um hidden input com o IP do cliente, com 'name=far_db_column_remote_ip'.
 
 ### Submission URL
 
-O plugin gera um hidden input com a URL do formulário de submissão.  
-O 'name' do input é 'far_db_column_submission_url'.
+O plugin gera um hidden input com a URL do formulário de submissão com o 'name=far_db_column_submission_url'.
 
 ### Banco de Dados Customizado
 
-Use o filter hook 'z_set_database' para utilizar outro banco de dados.  
+Use o filter hook 'fafar_cf7crud_set_database' para utilizar outro banco de dados.  
 Parâmetros:  
 $wpdb. WPDB Object. Instância global.
 
@@ -134,7 +127,7 @@ far_crud_column_filter:COLUNA_1|VALOR_1:COLUNA_2|VALOR_2
 
 Essa propriedade aceita mais de um par chave|valor.
 
-Atualmente, não é possível inserir uma chave ou valor com espaços.
+ATENÇÃO: Atualmente, não é possível inserir uma chave ou valor com espaços.
 
 É possível utilizar a palavra_chave 'this' para se referenciar ao valor da propriedade atual da 'submissão' em questão. Exemplo:
 
@@ -155,7 +148,7 @@ far_crud_json_filter:PROP_JSON_1|VALOR_1:PROP_JSON_2|VALOR_2
 
 Essa propriedade aceita mais de um par chave|valor.
 
-Atualmente, não é possível inserir uma chave ou valor com espaços.
+ATENÇÃO: Atualmente, não é possível inserir uma chave ou valor com espaços.
 
 É possível utilizar a palavra-chave 'this' para se referenciar ao valor da propriedade atual da 'submissão' em questão. Exemplo:
 
@@ -166,61 +159,76 @@ Atualmente, não é possível inserir uma chave ou valor com espaços.
 Para o preenchimento de dados, essa propriedade é opcional.
 
 ### far_crud_shortcode
+
 É possível utilizar a propriedade 'far_crud_shortcode' para usar um shortcode como fonte de dados para campo de qualquer tipo.  
 O shortcode deve retornar uma string JSON, com chaves e valores, obrigatóriamente, sendo a chave a 'value' da 'option' e valor sendo a label:
+
 ```
 [select profissional far_crud_shortcode:obter_profissionais_ativos]
 ```
-  
+
 ```json
 [
     {
         "1234hjk4" : "Jeferson"
-    }, 
+    },
     {
         "fjk234dskl" : "Linda"
     }
     ...
 ]
 ```
-  
+
 Sendo:
+
 ```html
-    <option value="1234hjk4">Jeferson</option>
-    <option value="fjk234dskl">Linda</option>
+<option value="1234hjk4">Jeferson</option>
+<option value="fjk234dskl">Linda</option>
 ```
-Obs.: Apesar do exemplo acima ter sido com o campo 'select', essa propriedade pode ser usada em campo de qualquer tipo.  
-  
+
+Obs.: Apesar do exemplo acima ter sido com o campo 'select', essa propriedade pode ser usada em campo de qualquer tipo.
+
 #### Text To Time
+
 É possível trocar o tipo do campo CF7 do tipo 'text' em 'time', apenas inserir a classe 'far-crud-time-field':
+
 ```
 [text horas class:far-crud-time-field]
 ```
 
 #### Text To Datetime
+
 É possível trocar o tipo do campo CF7 do tipo 'text' em 'datetime', apenas inserir a classe 'far-crud-datetime-field':
+
 ```
 [text dia_hora class:far-crud-datetime-field]
 ```
 
 #### Text To Datetime Local
+
 É possível trocar o tipo do campo CF7 do tipo 'text' em 'datetime-local', apenas inserir a classe 'far-crud-datetime-local-field':
+
 ```
 [text dia_hora class:far-crud-datetime-local-field]
 ```
 
 #### Text Transform
+
 É possível utilizar 4 valores da propriedade css 'text-transform' em campo CF7, apenas inserir a classe 'far-crud-transform-VALOR'.
 Os 4 valores suportados são:
+
 ```
 [text nome class:far-crud-transform-capitalize]
 ```
+
 ```
 [text nome class:far-crud-transform-uppercase]
 ```
+
 ```
 [text nome class:far-crud-transform-lowercase]
 ```
+
 ```
 [text nome class:far-crud-transform-none]
 ```
@@ -228,17 +236,22 @@ Os 4 valores suportados são:
 ### Saída
 
 #### Forçar Create / Update
+
 O plugin reconhece automáticamente se um formulário é de edição ou criação, verificando a existência do parâmetro 'id' na URL.  
 Porém, é possível forçar um ou outro com a criação de um input com nome 'fafar_cf7crud_create_submission' para forçar criação:
+
 ```
 [hidden fafar_cf7crud_create_submission "1"]
 ```
+
 ou 'fafar_cf7crud_update_submission' para forçar atualização:
+
 ```
 [hidden fafar_cf7crud_update_submission "1"]
 ```
 
 #### Manipular Colunas Comuns
+
 É possível manipular os valores de todas as colunas da tabela "fafar_cf7crud_submissions" configurando o nome da tag CF7 com a seguinte sintaxe:  
 far_db_column_ + NOME_DA_COLUNA  
 Exemplos:
@@ -264,8 +277,9 @@ Além de poder usar o filter hook 'fafar_cf7crud_not_allowed_fields' para pular 
 Exemplo:
 
 ```
-[text far_ignore_tag_carro "Corsa"]
+[text far_ignore_field_carro "Corsa"]
 ```
+
 Dessa forma, essa tag será ignorada pelo FAFAR CF7CRUD.
 
 ## Segurança
@@ -362,19 +376,29 @@ Retorno:
 
 ### Antes Da Submissão
 
-É possível usar o filter hook 'fafar_cf7crud_before_create' para uma última validação, antes da criação.
-Parâmetro esperado: Array PHP, com todos os campos e seus respectivos valores.
+É possível usar o filter hook 'fafar_cf7crud_before_create' para uma última validação, antes da criação.  
+Parâmetro esperado: Array PHP, com todos os campos e seus respectivos valores.  
+  
 Retorno esperado: Objeto PHP | null.
-Se o retorno for '**null**', cancela-se a submissão com uma mensagem de erro desconhecido.  
-Para cancelar a submissão com uma mensagem de erro, retorne um array com um atributo '**error_msg**'. Esse valor deve ser uma string.
-Para apenas pular a criação do objeto pelo plugin, retorne um array com um atributo '**far_prevent_submit**' com o valor **_true_**.
+  
+Cancela-se a submissão **sem** mensagem de erro, quando retorna-se:  
+- null  
+- array( 'far_prevent_submit' => [Valor analogo à verdadeiro] )  
+e **com** mensagem de erro:  
+- array( 'error_msg' => '...'(string) )  
+
+Para apenas pular a criação do objeto pelo plugin, retorne um array com um atributo '**far_prevent_submit**' com o valor analogo à verdadeiro.  
 
 O mesmo vale para o filter hook 'fafar_cf7crud_before_update'.
+
+#### Arquivos faltando(fafar_cf7crud_abort_on_missing_file)
+O plugin, por padrão, retornará um erro se algum arquivo falhar ao ser copiado do diretório padrão do CF7 para o do FAFAR CF7CRUD.  
+Esse comportamento pode ser mudado, usando o filter 'fafar_cf7crud_abort_on_missing_file'. Ele espera o 'true', 'false' ou qualquer coisa analoga aos dois primeiros.
 
 ### Depois Da Submissão
 
 É possível usar o action hook 'fafar_cf7crud_after_create' para vericação, alteração, etc.  
-Esse hook passa como único parâmetro, o id da 'submission' cadastrada.
+Esse hook passa como único parâmetro, o id da 'submission' cadastrada.  
 
 O mesmo vale para o action hook 'fafar_cf7crud_after_update'.
 
