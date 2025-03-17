@@ -48,11 +48,6 @@ function fafar_cf7crud_before_send_mail_create($contact_form, $submission) {
     } catch ( RuntimeException $e ) {
         return fafar_cf7crud_abort_submission( $contact_form, $e->getMessage() );
     }
-
-    error_log( '---------------------------------------------' );
-    error_log( print_r( $file_mappings, true ) );
-    error_log( print_r( $submission->get_posted_data(), true ) );
-    error_log( print_r( $contact_form->scan_form_tags(), true ) );
     
     // Process form data
     $form_data = fafar_cf7crud_prepare_form_data(
@@ -103,11 +98,6 @@ function fafar_cf7crud_before_send_mail_create($contact_form, $submission) {
         isset( $posted_data['far_prevent_submit'] )
     ) return true;
 
-    error_log( print_r( $table_name, true ) );
-    error_log( print_r( $record, true ) );
-
-    error_log( '---------------------------------------------' );
-
     // Insert into database
     if ( $db->insert( $table_name, $record ) === false ) {
         return fafar_cf7crud_abort_submission(
@@ -116,7 +106,7 @@ function fafar_cf7crud_before_send_mail_create($contact_form, $submission) {
         );
     }
 
-    do_action('fafar_cf7crud_after_create', $submission_id);
+    do_action( 'fafar_cf7crud_after_create', $submission_id );
 
     return true;
 }

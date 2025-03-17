@@ -160,29 +160,52 @@ function fafar_cf7crud_create_custom_file_type_input( $content ) {
  * @param array  $file_attrs File attributes.
  * @return string Custom file input HTML.
  */
-function fafar_cf7crud_get_custom_input_file( $input, $file_attrs ) {
-    preg_match( '/name="([\S]+)"/', $input, $matches );
-    $name = $matches[1];
-    $value = $file_attrs['fafar_cf7crud_file_' . $name] ?? '';
+function fafar_cf7crud_get_custom_input_file( $input_file_str, $file_attrs ) {
 
-    $custom_input = sprintf(
-        '<div class="fafar-cf7crud-input-document-container">
-            <button type="button" class="fafar-cf7crud-input-document-button" data-file-input-button="%s">
-                <span class="dashicons dashicons-upload"></span> Arquivo
-            </button>
-            <span class="fafar-cf7crud-input-document-name" data-file-input-label="%s">%s</span>
-        </div>
-        %s
-        <input class="wpcf7-form-control wpcf7-hidden" name="fafar_cf7crud_input_file_hidden_%s" value="%s" type="hidden" />',
-        esc_attr( $name ),
-        esc_attr( $name ),
-        esc_html( $value ?: 'Selecione um arquivo' ),
-        $input,
-        esc_attr( $name ),
-        esc_attr( $value )
-    );
+    // Pegando o 'name' no input
+    preg_match( '/name="[\S]+"/', $input_file_str, $matches );
+    $input_name = str_replace( 'name="' , '', $matches[0] );
+    $input_name = str_replace( '"' , '', $input_name );
 
-    return $custom_input;
+    // Forma o nome de um campo de arquivo possível guardado no BD
+    $db_file_column = 'fafar_cf7crud_file_' . $input_name;
+
+    // Pega o valor: String | ""
+    $value_attr = fafar_cf7crud_get_input_file_attr_value( $db_file_column, $file_attrs );
+
+    // Building fafar cf7crud file input with custom label and data attr
+    $custom_input_file  = '<div class="fafar-cf7crud-input-document-container">
+                                <button type="button" class="fafar-cf7crud-input-document-button" data-file-input-button="' . esc_attr( $input_name ) . '">
+                                <span class="dashicons dashicons-upload"></span>
+                                Arquivo
+                                </button>
+                                <span class="fafar-cf7crud-input-document-name" data-file-input-label="' . esc_attr( $input_name ) . '">
+                                ' . esc_html( ( $value_attr ?? "Selecione um arquivo" ) ) . '
+                                </span>
+                            </div>';
+
+    // Setting value attr of stock file input
+    $input_file_str = preg_replace( '/\/?>/', ' value="' . esc_attr( $value_attr ) . '" />', $input_file_str );
+
+    // Setting custom class
+    $input_file_str = preg_replace( '/class=\"/', ' class="fafar-cf7crud-stock-file-input ', $input_file_str );
+
+    // Building a hidden input to store the file names
+    $input_hidden_to_store_file_path = 
+        "<input class='wpcf7-form-control wpcf7-hidden' name='fafar_cf7crud_input_file_hidden_" . esc_attr( $input_name ) . "' value='" . esc_html( ( $value_attr ?? "" ) ) . "' type='hidden' />";
+
+    return $input_file_str . $custom_input_file . $input_hidden_to_store_file_path;
+}
+
+function fafar_cf7crud_get_input_file_attr_value( $key_attr, $file_attrs ) {
+
+    foreach ( $file_attrs as $key => $value) {
+
+        if ( $key_attr == $key ) return $value;
+
+    }
+
+    return '';
 }
 
 /**
