@@ -49,9 +49,11 @@ function fafar_cf7crud_before_send_mail_create($contact_form, $submission) {
         return fafar_cf7crud_abort_submission( $contact_form, $e->getMessage() );
     }
     
+    $posted_data = $submission->get_posted_data();
+
     // Process form data
     $form_data = fafar_cf7crud_prepare_form_data(
-        $submission->get_posted_data(),
+        $posted_data,
         $contact_form->scan_form_tags(),
         $file_mappings,
     );
@@ -71,7 +73,7 @@ function fafar_cf7crud_before_send_mail_create($contact_form, $submission) {
 
     $record = fafar_cf7crud_insert_common_columns(
         $record,
-        $submission->get_posted_data(),
+        $posted_data,
         $db,
         $table_name,
     );

@@ -51,9 +51,10 @@ function fafar_cf7crud_before_send_mail_update( $contact_form, $submission ) {
         $upload_dir
     );
 
+    $posted_data = $submission->get_posted_data();
     // Prepare form data
     $form_data = fafar_cf7crud_prepare_form_data(
-        $submission->get_posted_data(),
+        $posted_data,
         $contact_form->scan_form_tags(),
         $file_mappings
     );
@@ -66,7 +67,7 @@ function fafar_cf7crud_before_send_mail_update( $contact_form, $submission ) {
     ];
 
     // Map form fields to database columns
-    $record = fafar_cf7crud_insert_common_columns( $record, $submission->get_posted_data(), $db, $table_name );
+    $record = fafar_cf7crud_insert_common_columns( $record, $posted_data, $db, $table_name );
 
     // Apply filters for additional validation
     $record = apply_filters( 'fafar_cf7crud_before_update', $record, $submission_id, $contact_form );
