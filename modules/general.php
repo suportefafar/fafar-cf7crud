@@ -103,6 +103,10 @@ function fafar_cf7crud_populate_input_value_dynamically( $tag ) {
     
     if ( is_admin() ) return $tag;
 
+    // Gambiarra: o filter usado nessa função roda também na submissão, mas sem $_GET['id']
+    // o que acaba dando um erro bizarro.
+    if ( empty( $_GET['id'] ) ) return $tag;
+
     $option_display_value = fafar_cf7crud_get_tag_option_value( $tag, 'far_crud_display' );
 
     if ( $option_display_value === false ) return $tag;

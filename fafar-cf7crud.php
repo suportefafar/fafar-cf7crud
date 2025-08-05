@@ -29,7 +29,7 @@ if ( ! defined( 'WPINC' ) ) {
 define( 'FAFAR_CF7CRUD_DIR', trailingslashit( plugin_dir_path(__FILE__) ) );
 define( 'FAFAR_CF7_FILE_PREFIX', 'fafar-cf7crud-file-' );
 
-add_action('wp_enqueue_scripts', 'fafar_cf7crud_callback_for_setting_up_scripts');
+add_action( 'wp_enqueue_scripts', 'fafar_cf7crud_callback_for_setting_up_scripts' );
 
 register_activation_hook( __FILE__, 'fafar_cf7crud_on_activate' );
 
