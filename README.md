@@ -10,80 +10,117 @@ O plugin **FAFAR Contact Form 7 CRUD** salva os envios do formulário de contato
 
 ### Lendo
 
-_Não implementada até o presente momento._
+_A funcionalidade não foi implementada até o presente momento._
 
 ### Editando
 
-Este plugin lê o formulário CF7, procurando por uma campo com name='fafar_cf7crud_submission_id'.
-Se existir, o plugin saberá que se trata de um formulário de atualização, e então preencherá os campos com seus respectivos _name_
+Este plugin lê o formulário CF7, procurando por uma entrada oculta com name='id'.
+Se existir, "FAFAR CF7CRUD" sabe que é um formulário de atualização.
 
-### Deletando
+### Deletando (EM BREVE)
 
-_Não implementada até o presente momento._
+_A funcionalidade não foi implementada até o presente momento._
+
+Disponibiliza um botão por meio de um shortcode para _excluir_ a _submissão_.  
+O shortode recebe um parâmetro: 'id' da submissão.  
+A submissão **não** é de fato excluída, mas apenas muda o valor da coluna 'is_active' para 0(zero).
+A exclusão efetiva pode ser feita por meio do action hook 'fafar_cf7crud_after_delete', que passa o 'id' da submissão por parâmetro:
+
+```
+do_action( 'fafar_cf7crud_after_delete', $id );
+```
 
 ## Banco de Dados
 
-**fafar_cf7crud_submissions**:
+fafar_cf7crud_submissions:
 
-- id VARCHAR(255) NOT NULL | PRIMARY KEY
-- data JSON NOT NULL
-- form_id VARCHAR(255) NOT NULL
-- object_name VARCHAR(255)
-- is_active VARCHAR(255) NOT NULL DEFAULT '1'
-- owner VARCHAR(255)
-- group_owner VARCHAR(255)
-- permissions VARCHAR(255) NOT NULL DEFAULT '777'
-- remote_ip VARCHAR(255)
-- submission_url VARCHAR(255)
-- updated_at TIMESTAMP NOT NULL | DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-- created_at TIMESTAMP NOT NULL | DEFAULT CURRENT_TIMESTAMP
+- id VARCHAR(255) (NOT NULL | PRIMARY KEY)
+- form_id INT(20) (NOT NULL)
+- object_name VARCHAR(50)
+- data JSON (NOT NULL)
+- is_active INT(1) NOT NULL DEFAULT 1
+- updated_at TIMESTAMP (NOT NULL | DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)
+- created_at TIMESTAMP (NOT NULL | DEFAULT CURRENT_TIMESTAMP)
 
-### Está ativo(is_active)
+### Nome do Objeto
 
-Seguindo a filosofia de que deve-se evitar a exclusão, a coluna 'is_active' pode ser útil.
+O parâmetro 'object_name' é opcional e pode ser usado para atrelar um nome de objeto a submissão.  
+Adicione um input ao formulário com o nome 'fafar-cf7crud-object-name'. Exemplo:
 
-Uso comum:  
-'1': Ativado;  
-'0': Desativado;
+```
+[hidden fafar-cf7crud-object-name "carro"]
+```
 
-### Owner, Group Owner e Permissions
+### Está ativo
 
-Para auxiliar com permissionamento de objetos, o plugin conta as colunas de 'owner', 'group_owner' e 'permissions'. O plugin **não** utiliza nenhuma dessas colunas nem seus valores em nenhum momento.  
-Para estratégia de permissionamento, aconselha-se a do [Linux](https://www.redhat.com/sysadmin/linux-file-permissions-explained) da qual as colunas são baseadas.
+Seguindo a filosofia de que deve-se evitar a exclusão, a coluna 'is_active' pode ser útil.  
+Optado utilizar INT por ser um tipo de dados globalmente aceito.  
+Uso:  
+1: Ativado;  
+0: Desativado;  
+( Ou o que a criatividade mandar )
 
-#### Owner
+## Opções de Formulário
 
-Nome ou ID qualquer do dono.
+É possível inserir valores da tabela padrão do plugin('fafar-cf7crud-submissions') com algumas 'options' personalizadas.
+Pode-se usar a palavra 'this' para representar o valor da submissão atual.
 
-#### Group-Owner
+### fa-crud-display
 
-Nome ou ID qualquer do grupo dono.
+Essa propriedade define os valores aplicados do HTML. Exemplo:
 
-#### Permissions
+```
+<option value="PROPRIEDADE_VALOR">PROPRIEDADE_LABEL</option>
+```
 
-Algum código ou esquema de permissionamento.
+Sintaxe:
 
-Definição:
-0 - Nenhuma permissão de acesso. Equivalente a -rwx.
-1 - Permissão de execução (x).
-2 - Permissão de gravação (w).
-3 - Permissão de gravação e execução (wx).
-4 - Permissão de leitura (r).
-5 - Permissão de leitura e execução (rx).
-6 - Permissão de leitura e gravação (rw).
-7 - Permissão de leitura, gravação e execução.
+fa-crud-display:PROPRIEDADE_LABEL|PROPRIEDADE_VALOR
 
-Exemplo:
-'777': Todos podem ler, gravar e executar.  
-'740': Dono pode ler, gravar e executar; grupo do dono pode ler; outros não têm acesso.
+Essa propriedade aceita apenas um par chave|valor.
 
-### Remote IP
+Para o preenchimento de dados, essa é a única propriedade obrigatória.
 
-O plugin gera um hidden input com o IP do cliente, com 'name=far_db_column_remote_ip'.
+### fa-crud-column-filter
 
-### Submission URL
+Essa propriedade aplica filtro de igualdade com as colunas|valores informados.
 
-O plugin gera um hidden input com a URL do formulário de submissão com o 'name=far_db_column_submission_url'.
+Sintaxe:
+
+fa-crud-column-filter:COLUNA_1|VALOR_1:COLUNA_2|VALOR_2
+
+Essa propriedade aceita mais de um par chave|valor.
+
+Atualmente, não é possível inserir uma chave ou valor com espaços.
+
+É possível utilizar a palavra-chave 'this' para se referenciar ao valor da propriedade atual da 'submissão' em questão. Exemplo:
+
+```
+[... fa-crud-column-filter:id|this:color|this]
+```
+
+Para o preenchimento de dados, essa propriedade é opcional.
+
+### fa-crud-json-filter
+
+Essa propriedade aplica filtro de igualdade com as propriedades_json|valores informados.
+Essas propriedades são as que ficam armazenadas na coluna 'data'.
+
+Sintaxe:
+
+fa-crud-column-filter:PROP_JSON_1|VALOR_1:PROP_JSON_2|VALOR_2
+
+Essa propriedade aceita mais de um par chave|valor.
+
+Atualmente, não é possível inserir uma chave ou valor com espaços.
+
+É possível utilizar a palavra-chave 'this' para se referenciar ao valor da propriedade atual da 'submissão' em questão. Exemplo:
+
+```
+[... fa-crud-json-filter:id|this:color|this]
+```
+
+Para o preenchimento de dados, essa propriedade é opcional.
 
 ### Banco de Dados Customizado
 
@@ -92,195 +129,6 @@ Parâmetros:
 $wpdb. WPDB Object. Instância global.
 
 Observação: Se espera uma tabela 'fafar_cf7crud_submissions' com as respectivas colunas no banco de dados no retorno do hook.
-
-## Opções de Formulário
-
-### Entrada
-
-Trata-se das opções de entrada de dados no formulário.  
-É possível inserir valores da tabela padrão do plugin('fafar-cf7crud-submissions') com algumas 'options' personalizadas.
-Pode-se usar a palavra 'this' para representar o valor da submissão atual.
-
-#### far_crud_display
-
-Essa propriedade define os valores aplicados do HTML. Exemplo:
-
-```html
-<option value="PROPRIEDADE_VALOR">PROPRIEDADE_LABEL</option>
-```
-
-Sintaxe:
-
-far_crud_display:PROPRIEDADE_LABEL|PROPRIEDADE_VALOR
-
-Essa propriedade aceita apenas um par chave|valor.
-
-Para o preenchimento de dados, essa é a única propriedade obrigatória.
-
-#### far_crud_column_filter
-
-Essa propriedade aplica filtro de igualdade com as colunas|valores informados.
-
-Sintaxe:
-
-far_crud_column_filter:COLUNA_1|VALOR_1:COLUNA_2|VALOR_2
-
-Essa propriedade aceita mais de um par chave|valor.
-
-ATENÇÃO: Atualmente, não é possível inserir uma chave ou valor com espaços.
-
-É possível utilizar a palavra_chave 'this' para se referenciar ao valor da propriedade atual da 'submissão' em questão. Exemplo:
-
-```
-[... far_crud_column_filter:id|this:color|this]
-```
-
-Para o preenchimento de dados, essa propriedade é opcional.
-
-#### far_crud_json_filter
-
-Essa propriedade aplica filtro de igualdade com as propriedades_json|valores informados.
-Essas propriedades são as que ficam armazenadas na coluna 'data'.
-
-Sintaxe:
-
-far_crud_json_filter:PROP_JSON_1|VALOR_1:PROP_JSON_2|VALOR_2
-
-Essa propriedade aceita mais de um par chave|valor.
-
-ATENÇÃO: Atualmente, não é possível inserir uma chave ou valor com espaços.
-
-É possível utilizar a palavra-chave 'this' para se referenciar ao valor da propriedade atual da 'submissão' em questão. Exemplo:
-
-```
-[... far_crud_json_filter:id|this:color|this]
-```
-
-Para o preenchimento de dados, essa propriedade é opcional.
-
-### far_crud_shortcode
-
-É possível utilizar a propriedade 'far_crud_shortcode' para usar um shortcode como fonte de dados para campo de qualquer tipo.  
-O shortcode deve retornar uma string JSON, com chaves e valores, obrigatóriamente, sendo a chave a 'value' da 'option' e valor sendo a label:
-
-```
-[select profissional far_crud_shortcode:obter_profissionais_ativos]
-```
-
-```json
-[
-    {
-        "1234hjk4" : "Jeferson"
-    },
-    {
-        "fjk234dskl" : "Linda"
-    }
-    ...
-]
-```
-
-Sendo:
-
-```html
-<option value="1234hjk4">Jeferson</option>
-<option value="fjk234dskl">Linda</option>
-```
-
-Obs.: Apesar do exemplo acima ter sido com o campo 'select', essa propriedade pode ser usada em campo de qualquer tipo.
-
-#### Text To Time
-
-É possível trocar o tipo do campo CF7 do tipo 'text' em 'time', apenas inserir a classe 'far-crud-time-field':
-
-```
-[text horas class:far-crud-time-field]
-```
-
-#### Text To Datetime
-
-É possível trocar o tipo do campo CF7 do tipo 'text' em 'datetime', apenas inserir a classe 'far-crud-datetime-field':
-
-```
-[text dia_hora class:far-crud-datetime-field]
-```
-
-#### Text To Datetime Local
-
-É possível trocar o tipo do campo CF7 do tipo 'text' em 'datetime-local', apenas inserir a classe 'far-crud-datetime-local-field':
-
-```
-[text dia_hora class:far-crud-datetime-local-field]
-```
-
-#### Text Transform
-
-É possível utilizar 4 valores da propriedade css 'text-transform' em campo CF7, apenas inserir a classe 'far-crud-transform-VALOR'.
-Os 4 valores suportados são:
-
-```
-[text nome class:far-crud-transform-capitalize]
-```
-
-```
-[text nome class:far-crud-transform-uppercase]
-```
-
-```
-[text nome class:far-crud-transform-lowercase]
-```
-
-```
-[text nome class:far-crud-transform-none]
-```
-
-### Saída
-
-#### Forçar Create / Update
-
-O plugin reconhece automáticamente se um formulário é de edição ou criação, verificando a existência do parâmetro 'id' na URL.  
-Porém, é possível forçar um ou outro com a criação de um input com nome 'fafar_cf7crud_create_submission' para forçar criação:
-
-```
-[hidden fafar_cf7crud_create_submission "1"]
-```
-
-ou 'fafar_cf7crud_update_submission' para forçar atualização:
-
-```
-[hidden fafar_cf7crud_update_submission "1"]
-```
-
-#### Manipular Colunas Comuns
-
-É possível manipular os valores de todas as colunas da tabela "fafar_cf7crud_submissions" configurando o nome da tag CF7 com a seguinte sintaxe:  
-far_db_column_ + NOME_DA_COLUNA  
-Exemplos:
-
-```
-[text far_db_column_id "1"]
-[hidden far_db_column_object_name "carro"]
-[select far_db_created_at "1"]
-```
-
-### Pular Submissão
-
-Existe a possibilidade de pular a submissão pelo plugin, se for usado os hooks de verificações finais, para isso.
-Segue:
-
-```
-[hidden far_prevent_submit "1"]
-```
-
-### Pular Submissão De Tag's
-
-Além de poder usar o filter hook 'fafar_cf7crud_not_allowed_fields' para pular tag's específicas, é possível realizar o mesmo, ao criar uma tag CF7.  
-Exemplo:
-
-```
-[text far_ignore_field_carro "Corsa"]
-```
-
-Dessa forma, essa tag será ignorada pelo FAFAR CF7CRUD.
 
 ## Segurança
 
@@ -304,49 +152,49 @@ Para configurar campos não permitidos, use o filter hook 'fafar_cf7crud_not_all
 Parâmetros:  
 $allowed_fields. Array. Nome dos inputs. Um item: 'g-recaptcha-response'.
 
-### Tratamento Nos Campos
+## Inputs Customizados
 
-#### fafar_cf7crud_san_lb_
+### fafar-cf7crud-san-lb-
 
-Adicione o prefixo 'fafar_cf7crud_san_lb_' para que quebras de linha sejam mantidas.
+Adicione o prefixo 'fafar-cf7crud-san-lb-' para que quebras de linha sejam mantidas.
 Utiliza-se a função [sanitize_textarea_field](https://developer.wordpress.org/reference/functions/sanitize_textarea_field/).
 Exemplo:
 
 ```
-[textarea fafar_cf7crud_san_lb_sobre]
+[textarea fafar-cf7crud-san-lb-sobre]
 ```
 
-#### fafar_cf7crud_san_em_
+### fafar-cf7crud-san-em-
 
-Adicione o prefixo 'fafar_cf7crud_san_em_' para remover todos os caracteres não permitidos em um e_mail.
+Adicione o prefixo 'fafar-cf7crud-san-em-' para remover todos os caracteres não permitidos em um e-mail.
 Utiliza-se a função [sanitize_email](https://developer.wordpress.org/reference/functions/sanitize_email/).
 Exemplo:
 
 ```
-[email fafar_cf7crud_san_em_email]
+[email fafar-cf7crud-san-em-email]
 ```
 
-#### fafar_cf7crud_san_fi_
+### fafar-cf7crud-san-fi-
 
-Adicione o prefixo 'fafar_cf7crud_san_fi_' para substituir todos os espaços em branco por traços.
+Adicione o prefixo 'fafar-cf7crud-san-fi-' para substituir todos os espaços em branco por traços.
 Utiliza-se a função [sanitize_file_name](https://developer.wordpress.org/reference/functions/sanitize_file_name/).
 Exemplo:
 
 ```
-[text fafar_cf7crud_san_fi_nome_arquivo]
+[text fafar-cf7crud-san-fi-nome-arquivo]
 ```
 
-#### fafar_cf7crud_san_key_
+### fafar-cf7crud-san-key-
 
-Adicione o prefixo 'fafar_cf7crud_san_key_' para transformar todas as letras em minúsculos. Além disso, permite apenas sublinhados e traços.
+Adicione o prefixo 'fafar-cf7crud-san-key-' para transformar todas as letras em minúsculos. Além disso, permite apenas sublinhados e traços.
 Utiliza-se a função [sanitize_key](https://developer.wordpress.org/reference/functions/sanitize_key/).
 Exemplo:
 
 ```
-[text fafar_cf7crud_san_key_chave]
+[text fafar-cf7crud-san-key-chave]
 ```
 
-#### Outros
+### Outros
 
 Se nenhum prefixo conhecido for informado, utiliza-se o [sanitize_text_field](https://developer.wordpress.org/reference/functions/sanitize_text_field/).
 
@@ -357,50 +205,19 @@ Cada input[type=file] se torna uma entrada personalizada para melhor controle, n
 ### Prefixo
 
 No banco de dados, o nome do arquivo é guardado dessa forma:  
-'fafar_cf7crud_file_' + NOME DA PROPRIEDADE = NOME DO ARQUIVO.EXTENSÃO  
+'fafar-cf7crud-file-' + NOME DA PROPRIEDADE = NOME DO ARQUIVO.EXTENSÃO  
 Exemplo:  
-'fafar_cf7crud_file_foto':'foto.jpg'
+'fafar-cf7crud-file-foto':'foto.jpg'
 
 ### Pasta de Upload
 
 Caminho: [...]wp-content/uploads/fafar-cf7crud-uploads/
 
-Use o filter hook 'fafar_cf7crud_set_upload_dir_path' para utilizar outra pasta de upload.  
-Parâmetros:  
-$path. string. Caminho padrão
-
-Retorno:
-#path. string. Caminho padrão
-
 ## Validação Final
 
-### Antes Da Submissão
-
-É possível usar o filter hook 'fafar_cf7crud_before_create' para uma última validação, antes da criação.  
-Parâmetro esperado: Array PHP, com todos os campos e seus respectivos valores.  
-  
-Retorno esperado: Objeto PHP | null.
-  
-Cancela-se a submissão **sem** mensagem de erro, quando retorna-se:  
-- null  
-- array( 'far_prevent_submit' => [Valor analogo à verdadeiro] )  
-e **com** mensagem de erro:  
-- array( 'error_msg' => '...'(string) )  
-
-Para apenas pular a criação do objeto pelo plugin, retorne um array com um atributo '**far_prevent_submit**' com o valor analogo à verdadeiro.  
-
-O mesmo vale para o filter hook 'fafar_cf7crud_before_update'.
-
-#### Arquivos faltando(fafar_cf7crud_abort_on_missing_file)
-O plugin, por padrão, retornará um erro se algum arquivo falhar ao ser copiado do diretório padrão do CF7 para o do FAFAR CF7CRUD.  
-Esse comportamento pode ser mudado, usando o filter 'fafar_cf7crud_abort_on_missing_file'. Ele espera o 'true', 'false' ou qualquer coisa analoga aos dois primeiros.
-
-### Depois Da Submissão
-
-É possível usar o action hook 'fafar_cf7crud_after_create' para vericação, alteração, etc.  
-Esse hook passa como único parâmetro, o id da 'submission' cadastrada.  
-
-O mesmo vale para o action hook 'fafar_cf7crud_after_update'.
+É possível usar o filter hook 'fafar_cf7crud_before_create' para uma última validação, antes da criação.
+Parâmetro esperado: Array PHP, com todos os campos e seus respectivos valores.
+Retorno esperado: Objeto PHP | null(para cancelar a criação).
 
 ## Plugins Não Suportados
 
