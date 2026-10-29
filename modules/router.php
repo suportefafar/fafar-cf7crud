@@ -33,7 +33,9 @@ add_action( 'wpcf7_before_send_mail', 'fafar_cf7crud_before_send_mail_handler', 
  * @param array $contact_form     Input form data.
  * @return null
 */
-function fafar_cf7crud_before_send_mail_handler( $contact_form, $abort, $submission ) {
+function fafar_cf7crud_before_send_mail_handler( $contact_form, &$abort, $submission ) {
+
+    if ( $abort ) return;
 
     if( $submission->get_posted_data( 'fafar_cf7crud_create_submission' ) !== null ) {
 
@@ -50,6 +52,5 @@ function fafar_cf7crud_before_send_mail_handler( $contact_form, $abort, $submiss
 
     }
 
-    $abort = true;
 
 }

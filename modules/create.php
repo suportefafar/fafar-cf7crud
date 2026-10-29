@@ -58,7 +58,7 @@ function fafar_cf7crud_before_send_mail_create($contact_form, $submission) {
         $file_mappings,
     );
     
-    error_log( print_r( $form_data, true ) );
+
 
 
     // Serialize form data for storage
@@ -76,6 +76,7 @@ function fafar_cf7crud_before_send_mail_create($contact_form, $submission) {
         $posted_data,
         $db,
         $table_name,
+        $contact_form->scan_form_tags(),
     );
 
     // Validate before insertion

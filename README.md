@@ -417,3 +417,9 @@ O mesmo vale para o action hook 'fafar_cf7crud_after_update'.
 ### 1.0.0
 
 ### 1.0.1
+
+## Security maintenance
+
+Version 1.1.1 binds record identifiers in SQL and checks stored access policies before reading or writing submissions and before copying uploads. Permission masks use read=4, write=2, execute=1. Existing public forms remain public; private policies are taken from saved form tags on legacy tables without ACL columns. Hidden request fields cannot replace record identifiers, ownership or permissions. ELF, Windows and script executable uploads are rejected.
+
+Run `php tests/security.php` with PHP 8 or newer for isolated regression checks. Deployment exports exclude tests and development metadata.
